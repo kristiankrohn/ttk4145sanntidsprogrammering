@@ -10,23 +10,23 @@ pthread_mutex_t lock_i;
 
 // Note the return type: void*
 void* thread_1function(){
-  pthread_mutex_lock(&lock_i);
   int j;
-    for(j = 0; j <= 1000000; j++){
-      i++;
-    }
+  for(j = 0; j <= 1000000; j++){
+    pthread_mutex_lock(&lock_i);
+    i++;
     pthread_mutex_unlock(&lock_i);
-    return NULL;
+  }
+  return NULL;
 }
 
 void* thread_2function(){
-  pthread_mutex_lock(&lock_i);
   int k;
-    for(k = 0; k <= 1000000; k++){
-      i--;
-    }
+  for(k = 0; k <= 1000000; k++){
+    pthread_mutex_lock(&lock_i);
+    i--;
     pthread_mutex_unlock(&lock_i);
-    return NULL;
+  }
+  return NULL;
 }
 
 int main(){

@@ -14,10 +14,6 @@ def ThreadFunction1():
         i = i + 1
         mutex.release()
 
-# Potentially useful thing:
-#   In Python you "import" a global variable, instead of "export"ing it when you declare it
-#   (This is probably an effort to make you feel bad about typing the word "global")
-
 def ThreadFunction2():
     global i
     for num in range(0, 1000000):

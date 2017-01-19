@@ -10,16 +10,14 @@ mutex=Lock()
 def ThreadFunction1():
     global i
     for num in range(0, 1000000):
-        mutex.acquire()
-        i = i + 1
-        mutex.release()
+        with(mutex):
+            i = i + 1
 
 def ThreadFunction2():
     global i
     for num in range(0, 1000000):
-        mutex.acquire()
-        i = i - 1
-        mutex.release()
+        with(mutex):
+            i = i - 1
 
 def main():
     Thread1 = Thread(target = ThreadFunction1, args = (),)

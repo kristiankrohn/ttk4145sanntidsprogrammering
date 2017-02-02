@@ -1,0 +1,1 @@
+--UDP broadcast og logging av andre noder ferdig

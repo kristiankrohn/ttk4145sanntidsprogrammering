@@ -123,7 +123,7 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 		}
 
 		select{
-		case nextFloor <- addressArray[0]:
+		case nextFloor <- orderArray[0]:
 		default:
 		}
 

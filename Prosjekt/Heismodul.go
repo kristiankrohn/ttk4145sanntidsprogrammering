@@ -192,15 +192,18 @@ func Kjør_heis(nextFloor chan int, orderFinished chan bool) {
 			}
 
 			if currentFloor == nextFloor_i {
+				Elev_set_motor_direction(DIRN_STOP)
 				State = 1
 				fmt.Println("State 1")
 			} else {
-				nextFloor <- nextFloor_i
+				select{
+				case nextFloor <- nextFloor_i:
+				default:
+				}
 			}
 
 
 		} else if State == 1 {
-			Elev_set_motor_direction(DIRN_STOP)
 			Elev_set_door_open_lamp(1)
 			orderFinished <- true
 			time.Sleep(time.Second*1)

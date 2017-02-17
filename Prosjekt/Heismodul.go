@@ -49,6 +49,7 @@ func TestElevator() {
 }
 
 func Init_floor() int {
+	Elev_init()
 	var oldFloor int = -1
 	var newFloor int
 	var floor int
@@ -89,7 +90,7 @@ func Init_floor() int {
 			currentTime := time.Now()
 			if 1500000000 <= currentTime.Sub(startTime) {
 				fmt.Println("FAILURE, move elevator away from endstops!")
-				os.Exit(1)
+				//os.Exit(1)
 			}
 		}
 	}
@@ -99,7 +100,7 @@ func Init_floor() int {
 
 }
 
-func InternalTest() {
+func Intern_ordre(nextFloor chan int, finishedfloor chan bool) {
 	go Displayfloor()
 	var currentFloor = Init_floor()
 	var floor int
@@ -124,7 +125,7 @@ func InternalTest() {
 		}
 
 		if numberofOrders > 0 { // go to floor and remove order from que when finished
-			orderFinished = GoToFloor(currentFloor, orderArray[0])
+			orderFinished_i := <- orderFinished
 			if (orderFinished == true) && (oldOrderFinished == false) {
 				oldOrderFinished = true
 				Elev_set_button_lamp(BUTTON_COMMAND, orderArray[0], 0)
@@ -159,6 +160,7 @@ func InternalTest() {
 					fmt.Println("New order at floor: ", newOrder)
 					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[numberofOrders], 1)
 					numberofOrders++
+					nextFloor <- orderArray[0]
 				}
 
 			} else if (buttonPress[i] == 0) && (buttonRelease[i] == 1) {
@@ -169,39 +171,42 @@ func InternalTest() {
 	}
 }
 
-func GoToFloor(currentFloor int, nextFloor int) bool {
-	var startTime time.Time
-	if currentFloor < nextFloor {
-		Elev_set_motor_direction(DIRN_UP)
-		startTime = time.Now()
-	} else if currentFloor > nextFloor {
-		Elev_set_motor_direction(DIRN_DOWN)
-		startTime = time.Now()
-	} else {
-		Elev_set_motor_direction(DIRN_STOP)
-	}
+func Kjør_heis(nextFloor chan int, finishedfloor chan bool) {
+	for{
+		nextFloor_i := <-nextFloor
+		var currentFloor = Elev_get_floor_sensor_signal()
 
-	var floor = Elev_get_floor_sensor_signal()
-	if floor == nextFloor {
+		if currentFloor < nextFloor {
+			Elev_set_motor_direction(DIRN_UP)
+
+		} else if currentFloor > nextFloor {
+			Elev_set_motor_direction(DIRN_DOWN)
+
+		} else {
 		Elev_set_motor_direction(DIRN_STOP)
-		Elev_set_door_open_lamp(1)
-		fmt.Println(startTime)
-		currentTime := time.Now()
-		if 1000000000 <= currentTime.Sub(startTime) {
+		}
+
+		if currentFloor == nextFloor {
+			Elev_set_motor_direction(DIRN_STOP)
+			Elev_set_door_open_lamp(1)
+			time.Sleep(time.Second*1)
 			Elev_set_door_open_lamp(0)
 			fmt.Println("Ready for new floor")
-			return true
-		} else {return false}
+			finishedfloor <- true
+		}	else {
+			nextFloor <- nextFloor_i
+		}
 	}
-	return false
 }
 
 func main() {
 	Elev_init()
+	nextFloor := make(chan int, 1)
+	orderFinished := make(chan bool, 1)
 
-	InternalTest()
-	//TestElevator()
+	go Intern_ordre(nextFloor chan int, finishedfloor chan bool)
+	go Kjør_heis(nextFloor chan int, finishedfloor chan bool)
 
-	//deadChan := make(chan bool, 1)
-	//<-deadChan
+	deadChan := make(chan bool, 1)
+	<-deadChan
 }

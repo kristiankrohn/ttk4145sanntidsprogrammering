@@ -162,7 +162,7 @@ func InternalTest() {
 				}
 
 			} else if (buttonPress[i] == 0) && (buttonRelease[i] == 1) {
-				fmt.Println("New buttonrelease at: ", i)
+				//fmt.Println("New buttonrelease at: ", i)
 				buttonRelease[i] = 0
 			}
 		}

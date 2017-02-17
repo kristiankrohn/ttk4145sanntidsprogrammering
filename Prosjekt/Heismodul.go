@@ -173,8 +173,10 @@ func GoToFloor(currentFloor int, nextFloor int) bool {
 
 	if currentFloor < nextFloor {
 		Elev_set_motor_direction(DIRN_UP)
+		startTime := time.Now()
 	} else if currentFloor > nextFloor {
 		Elev_set_motor_direction(DIRN_DOWN)
+		startTime := time.Now()
 	} else {
 		Elev_set_motor_direction(DIRN_STOP)
 	}
@@ -183,9 +185,13 @@ func GoToFloor(currentFloor int, nextFloor int) bool {
 	if floor == nextFloor {
 		Elev_set_motor_direction(DIRN_STOP)
 		Elev_set_door_open_lamp(1)
-		time.Sleep(time.Second*1)
-		Elev_set_door_open_lamp(0)
-		return true
+
+		currentTime := time.Now()
+		if 1000000000 <= currentTime.Sub(startTime) {
+			Elev_set_door_open_lamp(0)
+			return true
+		}
+		else return false
 	}
 	return false
 }

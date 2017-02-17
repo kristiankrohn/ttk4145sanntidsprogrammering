@@ -190,8 +190,7 @@ func GoToFloor(currentFloor int, nextFloor int) bool {
 		if 1000000000 <= currentTime.Sub(startTime) {
 			Elev_set_door_open_lamp(0)
 			return true
-		}
-		else return false
+		} else {return false}
 	}
 	return false
 }

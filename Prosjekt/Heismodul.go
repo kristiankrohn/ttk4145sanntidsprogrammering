@@ -124,6 +124,7 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 
 		select{
 		case nextFloor <- orderArray[0]:
+			fmt.Println("Next floor is: ", orderArray[0])
 		default:
 		}
 

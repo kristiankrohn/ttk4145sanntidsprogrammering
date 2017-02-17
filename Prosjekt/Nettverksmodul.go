@@ -10,7 +10,28 @@ import (
 	//"bytes"
 )
 
-const numberofelevators int = 255
+/* 			Forslag til meldingsoppbygging
+	//	eksempel:
+	//	new order at floor 3			:		message(0,3,0,ipAddr)
+	//	cost											:		message(1,0,24,ipAddr)
+	//	completeOrder at floor 3	:		message(2,3,0,ipAddr)
+
+type message struct {
+	messageType 		int
+	floor						int
+	cost						int
+	ipAddr					int
+}
+
+const (
+	newOrder						int = iota
+	cost
+	completeOrder
+)
+
+*/
+
+const numberofelevators int = 255		//hvorfor 255??
 
 /* A Simple function to verify error */
 func CheckError(err error) {

@@ -122,6 +122,11 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 			currentFloor = floor
 		}
 
+		select{
+			case nextFloor <- addressArray[0]
+		default:
+		}
+
 		if numberofOrders > 0 { // go to floor and remove order from que when finished
 			select{
 			case orderFinished_i := <- orderFinished:
@@ -157,7 +162,6 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 					fmt.Println("New order at floor: ", newOrder)
 					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[numberofOrders], 1)
 					numberofOrders++
-					nextFloor <- orderArray[0]
 				}
 
 			} else if (buttonPress[i] == 0) && (buttonRelease[i] == 1) {

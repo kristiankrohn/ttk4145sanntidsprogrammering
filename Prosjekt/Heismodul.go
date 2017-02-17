@@ -169,30 +169,40 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 }
 
 func Kjør_heis(nextFloor chan int, orderFinished chan bool) {
+	var State int = 0
 	for{
 		nextFloor_i := <-nextFloor
 		var currentFloor = Elev_get_floor_sensor_signal()
 
-		if currentFloor < nextFloor_i {
+		if State == 0{
+			if currentFloor < nextFloor_i {
 			Elev_set_motor_direction(DIRN_UP)
 
-		} else if currentFloor > nextFloor_i {
-			Elev_set_motor_direction(DIRN_DOWN)
+			} else if currentFloor > nextFloor_i {
+				Elev_set_motor_direction(DIRN_DOWN)
 
-		} else {
-		Elev_set_motor_direction(DIRN_STOP)
+			} else {
+			Elev_set_motor_direction(DIRN_STOP)
+			}
+
+			nextFloor <- nextFloor_i
+
+			if currentFloor == nextFloor_i {
+				State = 1
+			}
+
+
 		}
-
-		if currentFloor == nextFloor_i {
+		else if State == 1 {
 			Elev_set_motor_direction(DIRN_STOP)
 			Elev_set_door_open_lamp(1)
-			//orderFinished <- true
+			orderFinished <- true
 			time.Sleep(time.Second*1)
 			Elev_set_door_open_lamp(0)
 			fmt.Println("Ready for new floor")
-			orderFinished <- true
+			State = 0
 		}	else {
-			nextFloor <- nextFloor_i
+			Elev_set_motor_direction(DIRN_STOP)
 		}
 	}
 }

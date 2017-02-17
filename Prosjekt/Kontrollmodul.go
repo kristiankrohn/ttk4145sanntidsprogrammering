@@ -15,6 +15,7 @@ func Ekstern_ordre(){
   //check om ordre allerede er i køen
   //legg til hvis ikke
   //del ordre på nettverket
+  //del på nytt hvis timeout
 }
 
 func Inkommende_ordre(){
@@ -25,7 +26,7 @@ func Inkommende_ordre(){
 
 func Vurder_kostnad(){
   //sammenlign innkommende resultat
-  //ta ordre eller la være hvis noen andre har bedre kost
+  //Vurder om vi skal ta ordre og legge den til i intern ordrekø
 }
 
 func Kvitter_ordre(){

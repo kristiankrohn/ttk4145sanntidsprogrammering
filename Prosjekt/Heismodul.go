@@ -183,7 +183,7 @@ func GoToFloor(currentFloor int, nextFloor int) bool {
 	if floor == nextFloor {
 		Elev_set_motor_direction(DIRN_STOP)
 		Elev_set_door_open_lamp(1)
-		time.Sleep(Second*1)
+		time.Sleep(time.Second*1)
 		Elev_set_door_open_lamp(0)
 		return true
 	}

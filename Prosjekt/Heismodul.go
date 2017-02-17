@@ -126,7 +126,7 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 
 		if numberofOrders > 0 { // go to floor and remove order from que when finished
 			orderFinished_i := <- orderFinished
-			if (orderFinished == true) && (oldOrderFinished == false) {
+			if (orderFinished_i == true) && (oldOrderFinished == false) {
 				oldOrderFinished = true
 				Elev_set_button_lamp(BUTTON_COMMAND, orderArray[0], 0)
 				fmt.Println("Order to floor: ", orderArray[0], " finished, removed from que")
@@ -136,7 +136,7 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 
 				numberofOrders--
 				fmt.Println("Number of order: ", numberofOrders)
-			} else if (orderFinished == false) && (oldOrderFinished == true) {
+			} else if (orderFinished_i == nil) && (oldOrderFinished == true) {
 				oldOrderFinished = false
 			}
 		}

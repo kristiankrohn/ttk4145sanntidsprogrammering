@@ -15,28 +15,28 @@
 
 ## Nettverksmodul
 - Broadcast_TCP(melding)()
-* Oppdag andre noder og legg til i nodeliste
-* Send melding til alle på nodeliste
-* Fjern fra nodeliste dersom død
+..* Oppdag andre noder og legg til i nodeliste
+..* Send melding til alle på nodeliste
+..* Fjern fra nodeliste dersom død
 - Recieve_TCP()(melding, IP)
-* Les inn meldinger og returner melding og IP
+..* Les inn meldinger og returner melding og IP
 
 ## Heismodul
 - Kjør_heis(intern kø og antall ordrer)(intern kø og antall ordrer)
-* Åpne dør, lukkedør, lys, kjører automatisk til siste element i ordrekøen dersom antall ordrer > 0
-* Fjerne utførte ordrer
+..* Åpne dør, lukkedør, lys, kjører automatisk til siste element i ordrekøen dersom antall ordrer > 0
+..* Fjerne utførte ordrer
 - Intern_ordre(intern kø og antall ordrer)(intern kø og antall ordrer)
-* Se "Prosedyre ved intern ordre"
+..* Se "Prosedyre ved intern ordre"
 - Etasje_indikator()()
-* Vis hvilken etasje vi er i
+..* Vis hvilken etasje vi er i
 ## Kontrollmodul
 - Beregn_kostnad(intern kø og antall ordrer)
-* Se på intern ordrekø og beregn kostnad og send den ut på nettverket
+..* Se på intern ordrekø og beregn kostnad og send den ut på nettverket
 - Ekstern_ordre
-* Publiser ordren på nettverket, publiser på nytt dersom timeout
+..* Publiser ordren på nettverket, publiser på nytt dersom timeout
 - Inkommende_ordre
-* Legg ordren til i lokalt ordrearray
+..* Legg ordren til i lokalt ordrearray
 - Vurder_kostnad
-* Se på innkommende kostnader og vurder og vi skal utføre ordren og legg til i intern ordrekø
+..* Se på innkommende kostnader og vurder og vi skal utføre ordren og legg til i intern ordrekø
 - Kvitter_ordre
 * Dersom utført ekstern ordre, send kvittering ut på nettverket

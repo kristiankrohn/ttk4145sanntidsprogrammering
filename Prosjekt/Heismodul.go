@@ -112,7 +112,7 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 	}
 	var newOrder int
 	var orderMatch bool
-	var orderFinished bool
+
 	var oldOrderFinished bool = false
 
 	var buttonPress [4]int

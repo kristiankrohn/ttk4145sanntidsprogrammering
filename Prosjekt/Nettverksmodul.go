@@ -12,19 +12,19 @@ import (
 
 /* 			 Forslag til meldingsoppbygging
 	//	eksempel:
-	//	new order at floor 3			:		message(0,3,0,ipAddr)
-	//	cost											:		message(1,0,24,ipAddr)
+	//	new order at floor 3		:		message(0,3,0,ipAddr)
+	//	cost				:		message(1,0,24,ipAddr)
 	//	completeOrder at floor 3	:		message(2,3,0,ipAddr)
 
 type message struct {
-	messageType 		int
-	floor						int
-	cost						int
-	ipAddr					int
+	messageType 	int
+	floor		int
+	cost		int
+	ipAddr		int
 }
 
 const (
-	newOrder						int = iota
+	newOrder	int = iota
 	cost
 	completeOrder
 )

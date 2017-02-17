@@ -29,6 +29,7 @@
   * Se "Prosedyre ved intern ordre"
 * Etasje_indikator()()
   * Vis hvilken etasje vi er i
+  
 ## Kontrollmodul
 * Beregn_kostnad(intern kø og antall ordrer)
   * Se på intern ordrekø og beregn kostnad og send den ut på nettverket

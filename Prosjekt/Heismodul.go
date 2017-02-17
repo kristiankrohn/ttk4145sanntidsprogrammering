@@ -204,8 +204,8 @@ func main() {
 	nextFloor := make(chan int, 1)
 	orderFinished := make(chan bool, 1)
 
-	go Intern_ordre(nextFloor chan int, finishedfloor chan bool)
-	go Kjør_heis(nextFloor chan int, finishedfloor chan bool)
+	go Intern_ordre(nextFloor, finishedfloor)
+	go Kjør_heis(nextFloor, finishedfloor)
 
 	deadChan := make(chan bool, 1)
 	<-deadChan

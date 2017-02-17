@@ -10,7 +10,7 @@ import (
 	//"bytes"
 )
 
-/* 			Forslag til meldingsoppbygging
+/* 			 Forslag til meldingsoppbygging
 	//	eksempel:
 	//	new order at floor 3			:		message(0,3,0,ipAddr)
 	//	cost											:		message(1,0,24,ipAddr)

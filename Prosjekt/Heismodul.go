@@ -3,7 +3,7 @@ package main
 import (
 	. "./driver"
 	"fmt"
-	"os"
+	//"os"
 	"time"
 )
 
@@ -176,17 +176,17 @@ func Kjør_heis(nextFloor chan int, finishedfloor chan bool) {
 		nextFloor_i := <-nextFloor
 		var currentFloor = Elev_get_floor_sensor_signal()
 
-		if currentFloor < nextFloor {
+		if currentFloor < nextFloor_i {
 			Elev_set_motor_direction(DIRN_UP)
 
-		} else if currentFloor > nextFloor {
+		} else if currentFloor > nextFloor_i {
 			Elev_set_motor_direction(DIRN_DOWN)
 
 		} else {
 		Elev_set_motor_direction(DIRN_STOP)
 		}
 
-		if currentFloor == nextFloor {
+		if currentFloor == nextFloor_i {
 			Elev_set_motor_direction(DIRN_STOP)
 			Elev_set_door_open_lamp(1)
 			time.Sleep(time.Second*1)

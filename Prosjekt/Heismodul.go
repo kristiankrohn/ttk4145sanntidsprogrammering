@@ -192,8 +192,7 @@ func Kjør_heis(nextFloor chan int, orderFinished chan bool) {
 			}
 
 
-		}
-		else if State == 1 {
+		} else if State == 1 {
 			Elev_set_motor_direction(DIRN_STOP)
 			Elev_set_door_open_lamp(1)
 			orderFinished <- true

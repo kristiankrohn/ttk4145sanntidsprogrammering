@@ -123,7 +123,7 @@ func InternalTest() {
 			currentFloor = floor
 		}
 
-		if numberofOrders > 0 {
+		if numberofOrders > 0 { // go to floor and remove order from que when finished
 			orderFinished = GoToFloor(currentFloor, orderArray[0])
 			if (orderFinished == true) && (oldOrderFinished == false) {
 				oldOrderFinished = true
@@ -140,7 +140,7 @@ func InternalTest() {
 			}
 		}
 
-		for i := 0; i < N_FLOORS; i++ {
+		for i := 0; i < N_FLOORS; i++ { // read buttonpress and add order to que
 			buttonPress[i] = Elev_get_button_signal(BUTTON_COMMAND, i)
 			if (buttonPress[i] == 1) && (buttonRelease[i] == 0) {
 				buttonRelease[i] = 1
@@ -154,7 +154,7 @@ func InternalTest() {
 					}
 				}
 
-				if orderMatch == false {
+				if (orderMatch == false) && (currentFloor != newOrder) {
 					orderArray[numberofOrders] = newOrder
 					fmt.Println("New order at floor: ", newOrder)
 					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[numberofOrders], 1)

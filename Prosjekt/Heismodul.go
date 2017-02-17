@@ -134,6 +134,7 @@ func InternalTest() {
 				}
 
 				numberofOrders--
+				fmt.Println("Number of order: ", numberofOrders)
 			} else if (orderFinished == false) && (oldOrderFinished == true) {
 				oldOrderFinished = false
 			}

@@ -122,13 +122,14 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 			currentFloor = floor
 		}
 
-		select{
-		case nextFloor <- orderArray[0]:
-			fmt.Println("Next floor is: ", orderArray[0])
-		default:
-		}
 
 		if numberofOrders > 0 { // go to floor and remove order from que when finished
+			select{
+			case nextFloor <- orderArray[0]:
+				fmt.Println("Next floor is: ", orderArray[0])
+			default:
+			}
+
 			select{
 			case orderFinished_i := <- orderFinished:
 					if orderFinished_i == true {

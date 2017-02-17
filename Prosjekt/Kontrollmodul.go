@@ -7,6 +7,7 @@ import (
 
 func Beregn_kostnad(){
   //gjør beregninger - eksterne og interne ordre
+    //det enkleste er å se på det totale antall ordre og etasjer den skal kjøre
   //del resultat på nettverk
 }
 

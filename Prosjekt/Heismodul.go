@@ -170,13 +170,13 @@ func InternalTest() {
 }
 
 func GoToFloor(currentFloor int, nextFloor int) bool {
-
+	var startTime time.Time
 	if currentFloor < nextFloor {
 		Elev_set_motor_direction(DIRN_UP)
-		startTime := time.Now()
+		startTime = time.Now()
 	} else if currentFloor > nextFloor {
 		Elev_set_motor_direction(DIRN_DOWN)
-		startTime := time.Now()
+		startTime = time.Now()
 	} else {
 		Elev_set_motor_direction(DIRN_STOP)
 	}

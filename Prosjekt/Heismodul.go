@@ -185,10 +185,11 @@ func Kjør_heis(nextFloor chan int, orderFinished chan bool) {
 			Elev_set_motor_direction(DIRN_STOP)
 			}
 
-			nextFloor <- nextFloor_i
-
 			if currentFloor == nextFloor_i {
 				State = 1
+				fmt.Println("State 1")
+			} else {
+				nextFloor <- nextFloor_i
 			}
 
 

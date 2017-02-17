@@ -113,8 +113,6 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 	var newOrder int
 	var orderMatch bool
 
-	var oldOrderFinished bool = false
-
 	var buttonPress [4]int
 	buttonRelease := [4]int{0, 0, 0, 0}
 
@@ -125,19 +123,16 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 		}
 
 		if numberofOrders > 0 { // go to floor and remove order from que when finished
-			orderFinished_i := <- orderFinished
-			if (orderFinished_i == true) && (oldOrderFinished == false) {
-				oldOrderFinished = true
-				Elev_set_button_lamp(BUTTON_COMMAND, orderArray[0], 0)
-				fmt.Println("Order to floor: ", orderArray[0], " finished, removed from que")
-				for i := 0; i < numberofOrders; i++ {
-					orderArray[i] = orderArray[i+1]
-				}
-
-				numberofOrders--
-				fmt.Println("Number of order: ", numberofOrders)
-			} else if (orderFinished_i == nil) && (oldOrderFinished == true) {
-				oldOrderFinished = false
+			select{
+			case orderFinished_i, true := <- orderFinished_i:
+					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[0], 0)
+					fmt.Println("Order to floor: ", orderArray[0], " finished, removed from que")
+					for i := 0; i < numberofOrders; i++ {
+						orderArray[i] = orderArray[i+1]
+					}
+					numberofOrders--
+					fmt.Println("Number of order: ", numberofOrders)
+				default:
 			}
 		}
 
@@ -189,10 +184,11 @@ func Kjør_heis(nextFloor chan int, orderFinished chan bool) {
 		if currentFloor == nextFloor_i {
 			Elev_set_motor_direction(DIRN_STOP)
 			Elev_set_door_open_lamp(1)
+			orderFinished <- true
 			time.Sleep(time.Second*1)
 			Elev_set_door_open_lamp(0)
 			fmt.Println("Ready for new floor")
-			orderFinished <- true
+			//orderFinished <- true
 		}	else {
 			nextFloor <- nextFloor_i
 		}

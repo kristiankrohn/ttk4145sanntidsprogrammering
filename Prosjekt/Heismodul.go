@@ -100,7 +100,7 @@ func Init_floor() int {
 
 }
 
-func Intern_ordre(nextFloor chan int, finishedfloor chan bool) {
+func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 	go Displayfloor()
 	var currentFloor = Init_floor()
 	var floor int
@@ -171,7 +171,7 @@ func Intern_ordre(nextFloor chan int, finishedfloor chan bool) {
 	}
 }
 
-func Kjør_heis(nextFloor chan int, finishedfloor chan bool) {
+func Kjør_heis(nextFloor chan int, orderFinished chan bool) {
 	for{
 		nextFloor_i := <-nextFloor
 		var currentFloor = Elev_get_floor_sensor_signal()
@@ -192,7 +192,7 @@ func Kjør_heis(nextFloor chan int, finishedfloor chan bool) {
 			time.Sleep(time.Second*1)
 			Elev_set_door_open_lamp(0)
 			fmt.Println("Ready for new floor")
-			finishedfloor <- true
+			orderFinished <- true
 		}	else {
 			nextFloor <- nextFloor_i
 		}
@@ -204,8 +204,8 @@ func main() {
 	nextFloor := make(chan int, 1)
 	orderFinished := make(chan bool, 1)
 
-	go Intern_ordre(nextFloor, finishedfloor)
-	go Kjør_heis(nextFloor, finishedfloor)
+	go Intern_ordre(nextFloor, orderFinished)
+	go Kjør_heis(nextFloor, orderFinished)
 
 	deadChan := make(chan bool, 1)
 	<-deadChan

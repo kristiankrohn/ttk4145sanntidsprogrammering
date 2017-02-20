@@ -1,7 +1,7 @@
 package main
 
 import (
-
+  "fmt"
 
 )
 
@@ -123,4 +123,7 @@ func Kvitter_ordre(){
 
 func main(){
 
+
+  deadChan := make(chan bool, 1)
+	<-deadChan
 }

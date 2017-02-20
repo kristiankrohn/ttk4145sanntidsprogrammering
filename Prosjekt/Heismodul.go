@@ -101,18 +101,17 @@ func Init_floor() int {
 }
 
 func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
-	go Displayfloor()
-	var currentFloor = Init_floor()
-	var floor int
 
+	var currentFloor = Init_floor()
+	go Displayfloor()
+	var floor int
 	var numberofOrders int = 0
-	var orderArray [N_FLOORS + 1]int
+	var orderArray [N_FLOORS + 1]int //initialize orderArray
 	for j := 0; j <= N_FLOORS; j++ {
 		orderArray[j] = -1
 	}
 	var newOrder int
 	var orderMatch bool
-
 	var buttonPress [4]int
 	buttonRelease := [4]int{0, 0, 0, 0}
 
@@ -124,11 +123,6 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 
 
 		if numberofOrders > 0 { // go to floor and remove order from que when finished
-			select{
-			case nextFloor <- orderArray[0]:
-				fmt.Println("Next floor is: ", orderArray[0])
-			default:
-			}
 
 			select{
 			case orderFinished_i := <- orderFinished:
@@ -139,7 +133,11 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 							orderArray[i] = orderArray[i+1]
 						}
 						numberofOrders--
-						fmt.Println("Number of order: ", numberofOrders)
+						fmt.Println("Number of orders: ", numberofOrders)
+						if numberofOrders >= 1 {
+							nextFloor <- orderArray[0]
+							fmt.Println("Next floor is: ", orderArray[0])
+						}
 					}
 				default:
 			}
@@ -164,6 +162,10 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 					fmt.Println("New order at floor: ", newOrder)
 					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[numberofOrders], 1)
 					numberofOrders++
+					if numberofOrders == 1 {
+						nextFloor <- orderArray[0]
+						fmt.Println("Next floor is: ", orderArray[0])
+					}
 				}
 
 			} else if (buttonPress[i] == 0) && (buttonRelease[i] == 1) {
@@ -176,43 +178,45 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 
 func Kjør_heis(nextFloor chan int, orderFinished chan bool) {
 	var State int = 0
+
 	for{
-		nextFloor_i := <-nextFloor
-		var currentFloor = Elev_get_floor_sensor_signal()
+		select{
+		case nextFloor_i := <-nextFloor:
+		for orderFinished_i == {
+			var currentFloor = Elev_get_floor_sensor_signal()
 
-		if State == 0{
-			if currentFloor < nextFloor_i {
-			Elev_set_motor_direction(DIRN_UP)
+			if State == 0{
+				if (currentFloor < nextFloor_i) && (nextFloor_i <= 3) {
+					Elev_set_motor_direction(DIRN_UP)
 
-			} else if currentFloor > nextFloor_i {
+				} else if (currentFloor > nextFloor_i) && (nextFloor_i >= 0) {
 				Elev_set_motor_direction(DIRN_DOWN)
 
-			} else {
-			Elev_set_motor_direction(DIRN_STOP)
-			}
-
-			if currentFloor == nextFloor_i {
-				Elev_set_motor_direction(DIRN_STOP)
-				State = 1
-				fmt.Println("State 1")
-			} else {
-				select{
-				case nextFloor <- nextFloor_i:
-				default:
+				} else {
+					Elev_set_motor_direction(DIRN_STOP)
 				}
+
+				if currentFloor == nextFloor_i {
+					Elev_set_motor_direction(DIRN_STOP)
+					State = 1
+					fmt.Println("State 1")
+				}
+
+			} else if State == 1 {
+				Elev_set_door_open_lamp(1)
+				orderFinished <- true
+				time.Sleep(time.Second*1)
+				Elev_set_door_open_lamp(0)
+				fmt.Println("Ready for new floor")
+				State = 0
+				break
+			}	else {
+				Elev_set_motor_direction(DIRN_STOP)
 			}
-
-
-		} else if State == 1 {
-			Elev_set_door_open_lamp(1)
-			orderFinished <- true
-			time.Sleep(time.Second*1)
-			Elev_set_door_open_lamp(0)
-			fmt.Println("Ready for new floor")
-			State = 0
-		}	else {
-			Elev_set_motor_direction(DIRN_STOP)
-		}
+	}
+	default:
+		Elev_set_motor_direction(DIRN_STOP)
+	}
 	}
 }
 

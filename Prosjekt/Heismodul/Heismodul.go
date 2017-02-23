@@ -1,4 +1,4 @@
-package main
+package Heismodul
 
 import (
 	. "./driver"
@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const N_FLOORS int = 4
+//const N_FLOORS int = 4
 
 func Displayfloor() {
 	var oldFloor int = -1
@@ -42,11 +42,12 @@ func Init_floor() int {
 				oldFloor = newFloor
 				foundFloor = true
 				Elev_set_motor_direction(DIRN_STOP)
+				fmt.Println("FoundFloor")
 				break
 			}
 		}
 		currentTime := time.Now()
-		if 1500000000 <= currentTime.Sub(startTime) {
+		if 2000000000 <= currentTime.Sub(startTime) {
 			break
 		}
 	}
@@ -63,30 +64,37 @@ func Init_floor() int {
 					oldFloor = newFloor
 					foundFloor = true
 					Elev_set_motor_direction(DIRN_STOP)
+					fmt.Println("FoundFloor")
 					break
 				}
 			}
 			currentTime := time.Now()
-			if 1500000000 <= currentTime.Sub(startTime) {
+			if 2000000000 <= currentTime.Sub(startTime) {
 				fmt.Println("FAILURE, move elevator away from endstops!")
 				os.Exit(1)
 			}
 		}
 	}
+	Elev_set_motor_direction(DIRN_STOP)
 
 	return int(oldFloor)
 }
 
+/*
 func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 
 	var currentFloor = Init_floor()
-	//go Displayfloor()
+
+	go Displayfloor()
+	go Kjør_heis(nextFloor, orderFinished)
+
 	var floor int
 	var numberofOrders int = 0
 	var orderArray [N_FLOORS + 1]int //initialize orderArray
 	for j := 0; j <= N_FLOORS; j++ {
 		orderArray[j] = -1
 	}
+
 	var newOrder int
 	var orderMatch bool
 	var buttonPress [4]int
@@ -150,7 +158,7 @@ func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
 		}
 	}
 }
-
+*/
 func Kjør_heis(nextFloor chan int, orderFinished chan bool) {
 	var State int = 0
 	var Finished = false
@@ -200,14 +208,16 @@ func Kjør_heis(nextFloor chan int, orderFinished chan bool) {
 	}
 }
 
+/*
 func main() {
 	//Elev_init()
 	nextFloor := make(chan int, 1)
 	orderFinished := make(chan bool, 1)
 
 	go Intern_ordre(nextFloor, orderFinished)
-	go Kjør_heis(nextFloor, orderFinished)
-	go Displayfloor()
+	//go Kjør_heis(nextFloor, orderFinished)
+	//go Displayfloor()
 	deadChan := make(chan bool, 1)
 	<-deadChan
 }
+*/

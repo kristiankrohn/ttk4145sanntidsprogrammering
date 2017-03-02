@@ -1,10 +1,10 @@
-package main
+package Nettverksmodul
 
 import (
 	"fmt"
 	"net"
 	"os"
-	"runtime"
+	//"runtime"
 	"strings"
 	"time"
 	//"bytes"
@@ -31,7 +31,7 @@ const (
 
 */
 
-const numberofelevators int = 255		//hvorfor 255??
+const numberofelevators int = 255 //hvorfor 255??
 
 /* A Simple function to verify error */
 func CheckError(err error) {
@@ -126,7 +126,7 @@ func TCP_sender(message chan string) {
 
 }
 
-func TCP_listener() {
+func TCP_listener(recievedmessage chan string) {
 	listenPort, err := net.Listen("tcp", ":20021")
 	CheckError(err)
 
@@ -143,8 +143,9 @@ func TCP_listener() {
 			n, err := connection.Read(buf)
 			CheckError(err)
 
-			address := connection.RemoteAddr()
-			fmt.Println("Recieved message : ", string(buf[0:n]), " from ", address)
+			address := connection.RemoteAddr().String()
+			recievedmessage <- strings.Join([]string{string(buf[0:n]), address}, ",")
+			//fmt.Println("Recieved message : ", string(buf[0:n]), " from ", address)
 			connection.Close()
 		} else {
 			connection.Close()
@@ -161,6 +162,7 @@ func Test(message chan string) {
 	}
 }
 
+/*
 func main() {
 
 	message := make(chan string, 1024)
@@ -174,3 +176,4 @@ func main() {
 	deadChan := make(chan bool, 1)
 	<-deadChan
 }
+*/

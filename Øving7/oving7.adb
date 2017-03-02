@@ -21,12 +21,11 @@ procedure oving7 is
             ------------------------------------------
             -- PART 3: Complete the exit protocol here
             ------------------------------------------
-            if Finished'Count = N-1 then
+            if Finished'Count = 1 then
               Finished_Gate_Open := True;
               Should_Commit := True;
-            elsif Finished'Count = 0 then
+            else
               Finished_Gate_Open := False;
-              Aborted := False;
             end if;
 
             if Aborted then

@@ -10,7 +10,28 @@ import (
 	"strings"
 )
 
-const N_FLOORS int = 4
+//const N_FLOORS int = 4
+const arraysize int = 12
+
+var orderArray [2][arraysize]int
+var numberofOrders int
+
+/* 	direction up = 0
+*	direction down = 1
+*	direction internal = 2
+ */
+
+func Init_system() {
+	Init_elevator()
+	for i := 0; i < 2; i++ {
+		for j := 0; j < arraysize; j++ {
+			orderArray[i][j] = -1
+		}
+	}
+	numberofOrders = 0
+	//Init_elevator()
+
+}
 
 func Beregn_kostnad() {
 	//gjør beregninger - eksterne og interne ordre
@@ -18,7 +39,57 @@ func Beregn_kostnad() {
 	//del resultat på nettverk
 }
 
-func Ekstern_ordre(message chan string) {
+func Local_orders(internal_button chan int, current_floor_internal chan int, nextFloor chan int, orderFinished chan bool) {
+
+	var currentFloor int
+	//go Displayfloor()
+	//go Elevator_driver(nextFloor, orderFinished)
+	//go Handle_buttons(up_button, down_button, internal_button)
+	var orderMatch bool = false
+
+	for {
+		select {
+		case floor := <-current_floor_internal:
+			{
+				currentFloor = int(floor)
+				//fmt.Println("Current floor is: ", currentFloor)
+				currentFloor = currentFloor
+			}
+		default:
+		}
+
+		select {
+		case internal_call := <-internal_button:
+			{
+				newOrder := int(internal_call)
+				for j := 0; j <= numberofOrders; j++ {
+					if (orderArray[0][j] == newOrder) && (orderArray[1][j] == 2) {
+						orderMatch = true
+						fmt.Println("Order already exist")
+					}
+				}
+
+				if orderMatch == false {
+					//if (orderMatch == false) && (currentFloor != newOrder) {
+					//fmt.Println("Current floor is: ", currentFloor)
+					orderArray[0][numberofOrders] = newOrder
+					orderArray[1][numberofOrders] = 2
+					fmt.Println("New order at floor: ", newOrder)
+					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[0][numberofOrders], 1)
+					numberofOrders++
+					if numberofOrders == 1 {
+						nextFloor <- orderArray[0][0]
+						fmt.Println("Next floor is: ", orderArray[0][0])
+					}
+				}
+			}
+
+		default:
+		}
+	}
+}
+
+func External_orders(message chan string, up_button chan int, down_button chan int, current_floor_external chan int, nextFloor chan int) {
 	//read buttonpress
 	//check om ordre allerede er i køen
 	//legg til hvis ikke
@@ -39,134 +110,81 @@ func Ekstern_ordre(message chan string) {
 	  Etter at noen har tatt ordren kan lampen tennes.
 	  ************************************************/
 	var currentFloor int
-	var floor int
 	var newOrder int
 	var orderMatch bool
-	numberofOrders := [2]int{0, 0}
-	var buttonPress [2][4]int
-	buttonRelease := [2][4]int{{0, 0, 0, 0}, {0, 0, 0, 0}}
-	orderArray := [2][4]int{{-1, -1, -1, -1}, {-1, -1, -1, -1}}
-	Button := BUTTON_CALL_UP
-	for {
-		floor = Elev_get_floor_sensor_signal()
-		if floor >= 0 {
-			currentFloor = floor
-		}
-
-		for DIR := 0; DIR <= 1; DIR++ {
-			if DIR == 0 {
-				Button = BUTTON_CALL_UP
-			} else {
-				Button = BUTTON_CALL_DOWN
-			}
-
-			for FLOOR := 0; FLOOR < N_FLOORS; FLOOR++ { // read buttonpress and add order to que
-				buttonPress[DIR][FLOOR] = Elev_get_button_signal(Button, FLOOR) //UP == 0, DOWN == 1
-				if (buttonPress[DIR][FLOOR] == 1) && (buttonRelease[DIR][FLOOR] == 0) {
-					buttonRelease[DIR][FLOOR] = 1
-					fmt.Println("New buttonpress at: ", FLOOR)
-					orderMatch = false
-					newOrder = FLOOR
-					for j := 0; j <= numberofOrders[DIR]; j++ {
-						if orderArray[DIR][j] == newOrder {
-							orderMatch = true
-							fmt.Println("Order already exist")
-						}
-					}
-
-					if (orderMatch == false) && (currentFloor != newOrder) {
-						orderArray[DIR][numberofOrders[DIR]] = newOrder
-						fmt.Println("New order at floor: ", newOrder)
-						//floor := strconv.FormatInt(int64(newOrder), 10)
-						//direction := strconv.FormatInt(int64(DIR), 10)
-						//call := []string{floor, direction}
-						message <- strings.Join([]string{strconv.FormatInt(int64(newOrder), 10), strconv.FormatInt(int64(DIR), 10)}, ",")
-						Elev_set_button_lamp(Button, orderArray[DIR][numberofOrders[DIR]], 1) // Flyttes etterhvert
-						numberofOrders[DIR]++
-					}
-				} else if (buttonPress[DIR][FLOOR] == 0) && (buttonRelease[DIR][FLOOR] == 1) {
-					//fmt.Println("New buttonrelease at: ", i)
-					buttonRelease[DIR][FLOOR] = 0
-				}
-			}
-		}
-	}
-}
-
-func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
-
-	var currentFloor = Init_floor()
-
-	go Displayfloor()
-	go Kjør_heis(nextFloor, orderFinished)
-
-	var floor int
-	var numberofOrders int = 0
-	var orderArray [N_FLOORS + 1]int //initialize orderArray
-	for j := 0; j <= N_FLOORS; j++ {
-		orderArray[j] = -1
-	}
-
-	var newOrder int
-	var orderMatch bool
-	var buttonPress [4]int
-	buttonRelease := [4]int{0, 0, 0, 0}
+	var DIR = 0
 
 	for {
-		floor = Elev_get_floor_sensor_signal()
-		if floor >= 0 {
-			currentFloor = floor
-		}
 
-		if numberofOrders > 0 { // go to floor and remove order from que when finished
-
-			select {
-			case orderFinished_i := <-orderFinished:
-				if orderFinished_i == true {
-					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[0], 0)
-					fmt.Println("Order to floor: ", orderArray[0], " finished, removed from que")
-					for i := 0; i < numberofOrders; i++ {
-						orderArray[i] = orderArray[i+1]
-					}
-					numberofOrders--
-					fmt.Println("Number of orders: ", numberofOrders)
-					if numberofOrders >= 1 {
-						nextFloor <- orderArray[0]
-						fmt.Println("Next floor is: ", orderArray[0])
-					}
-				}
-			default:
+		select {
+		case floor := <-current_floor_external:
+			{
+				currentFloor = int(floor)
+				currentFloor = currentFloor
 			}
+		default:
 		}
 
-		for i := 0; i < N_FLOORS; i++ { // read buttonpress and add order to que
-			buttonPress[i] = Elev_get_button_signal(BUTTON_COMMAND, i)
-			if (buttonPress[i] == 1) && (buttonRelease[i] == 0) {
-				buttonRelease[i] = 1
-				fmt.Println("New buttonpress at: ", i)
-				orderMatch = false
-				newOrder = i
+		select {
+		case call_up := <-up_button:
+			{
+				DIR = 0
+				newOrder = int(call_up)
 				for j := 0; j <= numberofOrders; j++ {
-					if orderArray[j] == newOrder {
+					if (orderArray[0][j] == newOrder) && (orderArray[1][j] == DIR) {
 						orderMatch = true
 						fmt.Println("Order already exist")
 					}
 				}
 
-				if (orderMatch == false) && (currentFloor != newOrder) {
-					orderArray[numberofOrders] = newOrder
+				if orderMatch == false {
+					//orderArray[0][numberofOrders] = newOrder
+					//orderArray[1][numberofOrders] = DIR
 					fmt.Println("New order at floor: ", newOrder)
-					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[numberofOrders], 1)
+					//floor := strconv.FormatInt(int64(newOrder), 10)
+					//direction := strconv.FormatInt(int64(DIR), 10)
+					//call := []string{floor, direction}
+					message <- strings.Join([]string{strconv.FormatInt(int64(newOrder), 10), strconv.FormatInt(int64(DIR), 10)}, ",")
+					/*Elev_set_button_lamp(BUTTON_CALL_UP, orderArray[0][numberofOrders], 1) // Flyttes etterhvert
 					numberofOrders++
 					if numberofOrders == 1 {
-						nextFloor <- orderArray[0]
-						fmt.Println("Next floor is: ", orderArray[0])
+						nextFloor <- orderArray[0][0]
+						fmt.Println("Next floor is: ", orderArray[0][0])
+					}*/
+				}
+			}
+		default:
+		}
+
+		select {
+		case call_down := <-down_button:
+			{
+				DIR = 1
+				newOrder = int(call_down)
+				for j := 0; j <= numberofOrders; j++ {
+					if (orderArray[0][j] == newOrder) && (orderArray[1][j] == DIR) {
+						orderMatch = true
+						fmt.Println("Order already exist")
 					}
 				}
-			} else if (buttonPress[i] == 0) && (buttonRelease[i] == 1) {
-				//fmt.Println("New buttonrelease at: ", i)
-				buttonRelease[i] = 0
+
+				if orderMatch == false {
+					//orderArray[0][numberofOrders] = newOrder
+					//orderArray[1][numberofOrders] = DIR
+					fmt.Println("New order at floor: ", newOrder)
+					//floor := strconv.FormatInt(int64(newOrder), 10)
+					//direction := strconv.FormatInt(int64(DIR), 10)
+					//call := []string{floor, direction}
+					message <- strings.Join([]string{strconv.FormatInt(int64(newOrder), 10), strconv.FormatInt(int64(DIR), 10)}, ",")
+					/*Elev_set_button_lamp(BUTTON_CALL_DOWN, orderArray[0][numberofOrders], 1) // Flyttes etterhvert
+					numberofOrders++
+					if numberofOrders == 1 {
+						nextFloor <- orderArray[0][0]
+						fmt.Println("Next floor is: ", orderArray[0][0])
+					}*/
+				}
 			}
+		default:
 		}
 	}
 }
@@ -183,9 +201,32 @@ func Inkommende_ordre(recievedmessage chan string, nextFloor chan int) {
 				slice := strings.Split(newOrder, ",")
 				//var first int = int(slice[0])
 				//fmt.Println(first)
-				value, err := strconv.ParseInt(slice[0], 10, 64)
+				floor, err := strconv.ParseInt(slice[0], 10, 64)
 				CheckError(err)
-				nextFloor <- int(value)
+				newOrder := int(floor)
+				direction, err := strconv.ParseInt(slice[1], 10, 64)
+				CheckError(err)
+				//nextFloor <- int(value)
+				DIR := int(direction)
+				if DIR == 0 {
+					orderArray[0][numberofOrders] = newOrder
+					orderArray[1][numberofOrders] = DIR
+					Elev_set_button_lamp(BUTTON_CALL_UP, orderArray[0][numberofOrders], 1) // Flyttes etterhvert
+					numberofOrders++
+					if numberofOrders == 1 {
+						nextFloor <- orderArray[0][0]
+						fmt.Println("Next floor is: ", orderArray[0][0])
+					}
+				} else if DIR == 1 {
+					orderArray[0][numberofOrders] = newOrder
+					orderArray[1][numberofOrders] = DIR
+					Elev_set_button_lamp(BUTTON_CALL_DOWN, orderArray[0][numberofOrders], 1) // Flyttes etterhvert
+					numberofOrders++
+					if numberofOrders == 1 {
+						nextFloor <- orderArray[0][0]
+						fmt.Println("Next floor is: ", orderArray[0][0])
+					}
+				}
 			}
 		default:
 		}
@@ -197,25 +238,70 @@ func Vurder_kostnad() {
 	//Vurder om vi skal ta ordre og legge den til i intern ordrekø
 }
 
-func Kvitter_ordre() {
+func Clear_orders(orderFinished chan bool, nextFloor chan int) {
 	//send kvittering for ekstern ordre på nettverket
 	//motta kvittering
 	//fjern ordre fra kø
+
+	Button := BUTTON_COMMAND
+	for {
+		if numberofOrders > 0 { // go to floor and remove order from que when finished
+
+			select {
+			case orderFinished_i := <-orderFinished:
+				if orderFinished_i == true {
+					if orderArray[1][0] == 0 {
+						Button = BUTTON_CALL_UP
+					} else if orderArray[1][0] == 1 {
+						Button = BUTTON_CALL_DOWN
+					} else {
+						Button = BUTTON_COMMAND
+					}
+					Elev_set_button_lamp(Button, orderArray[0][0], 0)
+					fmt.Println("Order to floor: ", orderArray[0][0], " finished, removed from que")
+					for i := 0; i < numberofOrders; i++ {
+						orderArray[0][i] = orderArray[0][i+1]
+						orderArray[1][i] = orderArray[1][i+1]
+					}
+					numberofOrders--
+					fmt.Println("Number of orders: ", numberofOrders)
+					if numberofOrders >= 1 {
+						nextFloor <- orderArray[0][0]
+						fmt.Println("Next floor is: ", orderArray[0][0])
+					}
+				}
+			default:
+			}
+		}
+	}
 }
 
 func main() {
+
 	nextFloor := make(chan int, 10)
 	orderFinished := make(chan bool, 1)
+	up_button := make(chan int, 10)
+	down_button := make(chan int, 10)
+	internal_button := make(chan int, 10)
+	current_floor_internal := make(chan int, 10)
+	current_floor_external := make(chan int, 10)
 	message := make(chan string, 1024)
 	recievedmessage := make(chan string, 1024)
 	runtime.GOMAXPROCS(runtime.NumCPU())
+	Init_system()
+	fmt.Println("Init finished")
+	go Elevator_driver(nextFloor, orderFinished)
 
-	go Intern_ordre(nextFloor, orderFinished)
-	go Ekstern_ordre(message)
+	go Local_orders(internal_button, current_floor_internal, nextFloor, orderFinished)
+	go Handle_buttons(up_button, down_button, internal_button)
+	go External_orders(message, up_button, down_button, current_floor_external, nextFloor)
+	go Current_floor(current_floor_external, current_floor_internal)
+	go Displayfloor(current_floor_external, current_floor_internal)
 	go Broadcast()
 	go TCP_sender(message)
 	go TCP_listener(recievedmessage)
 	go Inkommende_ordre(recievedmessage, nextFloor)
+	go Clear_orders(orderFinished, nextFloor)
 	deadChan := make(chan bool, 1)
 	<-deadChan
 }

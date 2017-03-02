@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-//const N_FLOORS int = 4
+const N_FLOORS int = 4
 
-func Displayfloor() {
+func Displayfloor(current_floor_external chan int, current_floor_internal chan int) {
 	var oldFloor int = -1
 	var newFloor int
 	var floor int
@@ -21,12 +21,15 @@ func Displayfloor() {
 				oldFloor = newFloor
 				//fmt.Println(newFloor + 1)
 				Elev_set_floor_indicator(newFloor)
+				current_floor_external <- newFloor
+				current_floor_internal <- newFloor
+				fmt.Println("Current floor is: ", oldFloor)
 			}
 		}
 	}
 }
 
-func Init_floor() int {
+func Init_elevator() {
 	Elev_init()
 	var oldFloor int = -1
 	var newFloor int
@@ -34,6 +37,7 @@ func Init_floor() int {
 	var foundFloor bool = false
 	Elev_set_motor_direction(DIRN_UP)
 	startTime := time.Now()
+	fmt.Println("Looking for floor")
 	for {
 		floor = Elev_get_floor_sensor_signal()
 		if floor >= 0 {
@@ -42,7 +46,7 @@ func Init_floor() int {
 				oldFloor = newFloor
 				foundFloor = true
 				Elev_set_motor_direction(DIRN_STOP)
-				fmt.Println("FoundFloor")
+				fmt.Println("FoundFloorUP")
 				break
 			}
 		}
@@ -64,7 +68,7 @@ func Init_floor() int {
 					oldFloor = newFloor
 					foundFloor = true
 					Elev_set_motor_direction(DIRN_STOP)
-					fmt.Println("FoundFloor")
+					fmt.Println("FoundFloorDOWN")
 					break
 				}
 			}
@@ -77,112 +81,113 @@ func Init_floor() int {
 	}
 	Elev_set_motor_direction(DIRN_STOP)
 
-	return int(oldFloor)
+	//return int(oldFloor)
 }
 
-/*
-func Intern_ordre(nextFloor chan int, orderFinished chan bool) {
-
-	var currentFloor = Init_floor()
-
-	go Displayfloor()
-	go Kjør_heis(nextFloor, orderFinished)
-
+func Current_floor(current_floor_external chan int, current_floor_internal chan int) {
 	var floor int
-	var numberofOrders int = 0
-	var orderArray [N_FLOORS + 1]int //initialize orderArray
-	for j := 0; j <= N_FLOORS; j++ {
-		orderArray[j] = -1
-	}
-
-	var newOrder int
-	var orderMatch bool
-	var buttonPress [4]int
-	buttonRelease := [4]int{0, 0, 0, 0}
-
+	var newFloor int
+	var oldFloor int
 	for {
 		floor = Elev_get_floor_sensor_signal()
 		if floor >= 0 {
-			currentFloor = floor
-		}
-
-		if numberofOrders > 0 { // go to floor and remove order from que when finished
-
-			select {
-			case orderFinished_i := <-orderFinished:
-				if orderFinished_i == true {
-					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[0], 0)
-					fmt.Println("Order to floor: ", orderArray[0], " finished, removed from que")
-					for i := 0; i < numberofOrders; i++ {
-						orderArray[i] = orderArray[i+1]
-					}
-					numberofOrders--
-					fmt.Println("Number of orders: ", numberofOrders)
-					if numberofOrders >= 1 {
-						nextFloor <- orderArray[0]
-						fmt.Println("Next floor is: ", orderArray[0])
-					}
+			newFloor = floor
+			if newFloor != oldFloor {
+				oldFloor = newFloor
+				select {
+				case current_floor_internal <- oldFloor:
+				default:
 				}
-			default:
-			}
-		}
-
-		for i := 0; i < N_FLOORS; i++ { // read buttonpress and add order to que
-			buttonPress[i] = Elev_get_button_signal(BUTTON_COMMAND, i)
-			if (buttonPress[i] == 1) && (buttonRelease[i] == 0) {
-				buttonRelease[i] = 1
-				fmt.Println("New buttonpress at: ", i)
-				orderMatch = false
-				newOrder = i
-				for j := 0; j <= numberofOrders; j++ {
-					if orderArray[j] == newOrder {
-						orderMatch = true
-						fmt.Println("Order already exist")
-					}
+				select {
+				case current_floor_external <- oldFloor:
+				default:
 				}
-
-				if (orderMatch == false) && (currentFloor != newOrder) {
-					orderArray[numberofOrders] = newOrder
-					fmt.Println("New order at floor: ", newOrder)
-					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[numberofOrders], 1)
-					numberofOrders++
-					if numberofOrders == 1 {
-						nextFloor <- orderArray[0]
-						fmt.Println("Next floor is: ", orderArray[0])
-					}
-				}
-			} else if (buttonPress[i] == 0) && (buttonRelease[i] == 1) {
-				//fmt.Println("New buttonrelease at: ", i)
-				buttonRelease[i] = 0
+				fmt.Println("Current floor is: ", oldFloor)
 			}
 		}
 	}
 }
-*/
-func Kjør_heis(nextFloor chan int, orderFinished chan bool) {
+
+func Handle_buttons(up_button chan int, down_button chan int, internal_button chan int) {
+
+	var buttonPress [3][N_FLOORS]int
+	var buttonRelease [3][N_FLOORS]int
+
+	for i := 0; i < 3; i++ {
+		for j := 0; j < N_FLOORS; j++ {
+			buttonRelease[i][j] = 0
+		}
+	}
+	Button := BUTTON_CALL_UP
+	for {
+		for DIR := 0; DIR <= 2; DIR++ {
+			if DIR == 0 {
+				Button = BUTTON_CALL_UP
+			} else if DIR == 1 {
+				Button = BUTTON_CALL_DOWN
+			} else {
+				Button = BUTTON_COMMAND
+			}
+
+			for FLOOR := 0; FLOOR < N_FLOORS; FLOOR++ { // read buttonpress and add order to que
+				buttonPress[DIR][FLOOR] = Elev_get_button_signal(Button, FLOOR) //UP == 0, DOWN == 1
+				if (buttonPress[DIR][FLOOR] == 1) && (buttonRelease[DIR][FLOOR] == 0) {
+					buttonRelease[DIR][FLOOR] = 1
+					fmt.Println("New buttonpress at: ", FLOOR)
+					if DIR == 0 {
+						up_button <- FLOOR
+					} else if DIR == 1 {
+						down_button <- FLOOR
+					} else {
+						internal_button <- FLOOR
+					}
+
+				} else if (buttonPress[DIR][FLOOR] == 0) && (buttonRelease[DIR][FLOOR] == 1) {
+					//fmt.Println("New buttonrelease at: ", i)
+					buttonRelease[DIR][FLOOR] = 0
+				}
+			}
+		}
+	}
+}
+
+func Elevator_driver(nextFloor chan int, orderFinished chan bool) {
+
 	var State int = 0
 	var Finished = false
-	var lastFloor int
+	var currentFloor int
+
 	for {
+		floor := Elev_get_floor_sensor_signal()
+		if floor >= 0 {
+			currentFloor = floor
+			//fmt.Println(currentFloor)
+		}
+
 		select {
 		case nextFloor_i := <-nextFloor:
+			fmt.Println("Going for next floor", nextFloor_i)
 			Finished = false
+
+			if (currentFloor < nextFloor_i) && (nextFloor_i <= 3) {
+				Elev_set_motor_direction(DIRN_UP)
+				fmt.Println("UP")
+			} else if (currentFloor > nextFloor_i) && (nextFloor_i >= 0) {
+				Elev_set_motor_direction(DIRN_DOWN)
+				fmt.Println("DOWN")
+			} else {
+				Elev_set_motor_direction(DIRN_STOP)
+				fmt.Println("STOP")
+			}
+
 			for Finished == false {
-				var currentFloor = Elev_get_floor_sensor_signal()
-				if currentFloor >= 0 {
-					lastFloor = currentFloor
+				floor := Elev_get_floor_sensor_signal()
+				if floor >= 0 {
+					currentFloor = floor
+					//fmt.Println(currentFloor)
 				}
+
 				if State == 0 {
-
-					if (lastFloor < nextFloor_i) && (nextFloor_i <= 3) {
-						Elev_set_motor_direction(DIRN_UP)
-
-					} else if (lastFloor > nextFloor_i) && (nextFloor_i >= 0) {
-						Elev_set_motor_direction(DIRN_DOWN)
-
-					} else {
-						Elev_set_motor_direction(DIRN_STOP)
-					}
 
 					if currentFloor == nextFloor_i {
 						Elev_set_motor_direction(DIRN_STOP)
@@ -199,25 +204,11 @@ func Kjør_heis(nextFloor chan int, orderFinished chan bool) {
 					State = 0
 					Finished = true
 				} else {
-					Elev_set_motor_direction(DIRN_STOP)
+					//Elev_set_motor_direction(DIRN_STOP)
 				}
 			}
 		default:
-			Elev_set_motor_direction(DIRN_STOP)
+			//Elev_set_motor_direction(DIRN_STOP)
 		}
 	}
 }
-
-/*
-func main() {
-	//Elev_init()
-	nextFloor := make(chan int, 1)
-	orderFinished := make(chan bool, 1)
-
-	go Intern_ordre(nextFloor, orderFinished)
-	//go Kjør_heis(nextFloor, orderFinished)
-	//go Displayfloor()
-	deadChan := make(chan bool, 1)
-	<-deadChan
-}
-*/

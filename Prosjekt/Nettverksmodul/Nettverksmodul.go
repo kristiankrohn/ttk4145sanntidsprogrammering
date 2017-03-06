@@ -42,15 +42,30 @@ func CheckError(err error) {
 }
 
 func Broadcast() {
+	// rewrite to statemachine to handle reconnects
 
-	BroadcastAddr, err := net.ResolveUDPAddr("udp", "129.241.187.255:20021")
-	CheckError(err)
-	BroadcastSpammer, err := net.DialUDP("udp", nil, BroadcastAddr)
-	CheckError(err)
-
-	for {
-		BroadcastSpammer.Write([]byte("Hello, i'm an elevator from group 67 - connect to me!"))
-		time.Sleep(time.Second * 1)
+	var State int = 0
+	for{
+		if State == 0{
+			BroadcastAddr, err := net.ResolveUDPAddr("udp", "129.241.187.255:20021")
+			if err != nil{
+				State = 0
+				time.Sleep(time.Second * 1)
+			}
+			BroadcastSpammer, err := net.DialUDP("udp", nil, BroadcastAddr)
+			if err != nil{
+				State = 0
+				time.Sleep(time.Second * 1)
+			} else {
+				State = 1
+			}
+		} else if State == 1 {
+			_ , err := BroadcastSpammer.Write([]byte("Hello, i'm an elevator from group 67 - connect to me!"))
+			if err != 0{
+				State = 0
+			} 
+			time.Sleep(time.Second * 1)
+		}
 	}
 }
 
@@ -58,72 +73,92 @@ func TCP_sender(message chan string) {
 
 	var numberofIPs int = 0
 	var addressArray [numberofelevators]string
-
-	ListenPort, err := net.ResolveUDPAddr("udp", ":20021")
-	CheckError(err)
-	Listen, err := net.ListenUDP("udp", ListenPort)
-	CheckError(err)
 	buf := make([]byte, 1024)
+	var State int = 0
+	for{
+		if State == 0{
+			ListenPort, err := net.ResolveUDPAddr("udp", ":20021")
+			if err != nil{
+				State = 0
+			}
+			Listen, err := net.ListenUDP("udp", ListenPort)
+			if err != nil{
+				State = 0
+			} else {
+				State = 1
+				fmt.Println("Listener address resolved")
+			}
 
-	for {
+		} else if State == 1{
 
-		n, addr, err := Listen.ReadFromUDP(buf)
+
+
+			n, addr, err := Listen.ReadFromUDP(buf)
 		//fmt.Println("Received ", string(buf[0:n]), " from ", addr)
 
-		if err != nil {
-			fmt.Println("Error: ", err)
-			Listen.Close()
-			net.ListenUDP("udp", ListenPort)
+			if err != nil {
+				fmt.Println("Error: ", err)
+				Listen.Close()
+				//net.ListenUDP("udp", ListenPort)
+				State = 0
+				fmt.Println("Connection closed")
 
-		}
+			} else {
 
-		firsthalf := strings.Split(addr.String(), ":")
-		NewIP := firsthalf[0]
-		var IPmatch bool = false
+				firsthalf := strings.Split(addr.String(), ":")
+				NewIP := firsthalf[0]
+				var IPmatch bool = false
 
-		if string(buf[0:n]) == "Hello, i'm an elevator from group 67 - connect to me!" {
+				if string(buf[0:n]) == "Hello, i'm an elevator from group 67 - connect to me!" {
 
-			for i := 0; i <= numberofIPs; i++ {
-				if addressArray[i] == NewIP {
-					IPmatch = true
-				}
-			}
-
-			if IPmatch == false {
-				numberofIPs++
-				addressArray[numberofIPs] = NewIP
-
-				fmt.Println("New machine at: ", addressArray[numberofIPs])
-
-			}
-		}
-
-		select {
-		case sendmessage := <-message:
-			{
-				for i := 0; i <= numberofIPs; i++ {
-					Clientaddress, err := net.ResolveTCPAddr("tcp", string(addressArray[i]+":20021"))
-					CheckError(err)
-					Client, err := net.DialTCP("tcp", nil, Clientaddress)
-					if err != nil {
-						fmt.Println("Disconnect :", addressArray[i])
-						for j := 0; j <= (numberofIPs - i); j++ {
-							addressArray[i+j] = addressArray[i+j+1]
+					for i := 0; i <= numberofIPs; i++ {
+						if addressArray[i] == NewIP {
+							IPmatch = true
 						}
-						numberofIPs--
-
-					} else {
-
-						_, err = Client.Write([]byte(sendmessage))
-						CheckError(err)
 					}
 
+					if IPmatch == false {
+						numberofIPs++
+						addressArray[numberofIPs] = NewIP
+
+						fmt.Println("New machine at: ", addressArray[numberofIPs])
+
+					}
+				}
+
+				select {
+				case sendmessage := <-message:
+					{
+						for i := 0; i <= numberofIPs; i++ {
+							Clientaddress, err := net.ResolveTCPAddr("tcp", string(addressArray[i]+":20021"))
+							if err =! nil{
+								fmt.Println("Disconnect :", addressArray[i])
+								for j := 0; j <= (numberofIPs - i); j++ {
+									addressArray[i+j] = addressArray[i+j+1]
+								}
+								numberofIPs--
+							} else {
+								Client, err := net.DialTCP("tcp", nil, Clientaddress)
+								if err != nil {
+									fmt.Println("Disconnect :", addressArray[i])
+									for j := 0; j <= (numberofIPs - i); j++ {
+										addressArray[i+j] = addressArray[i+j+1]
+									}
+
+									numberofIPs--
+
+								} else {
+									_, err = Client.Write([]byte(sendmessage))
+									CheckError(err)
+								}
+							}
+						}
+					}
+				default:
 				}
 			}
-		default:
 		}
 	}
-
 }
 
 func TCP_listener(recievedmessage chan string) {

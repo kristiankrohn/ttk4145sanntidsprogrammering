@@ -73,23 +73,28 @@ func Calculate_cost(floor int, calldirection int) int{
 	//del resultat på nettverk
 	var cost int
 	var direction int = 1000
-
-	if floor > CurrentFloor{
-		if orderArray[0][0] > CurrentFloor{
-			direction = 1
+	if numberofOrders == 0{
+		if floor > CurrentFloor{
+			cost = floor - CurrentFloor
 		} else {
-			direction = 2
+			cost = CurrentFloor - floor
 		}
-	} else {
-		if orderArray[0][0] > CurrentFloor{
-			direction = 2
+	} else{ 
+		if floor > CurrentFloor{
+			if orderArray[0][0] > CurrentFloor{
+				direction = 1
+			} else {
+				direction = 2
+			}
 		} else {
-			direction = 1
+			if orderArray[0][0] > CurrentFloor{
+				direction = 2
+			} else {
+				direction = 1
+			}
 		}
+		cost = direction * (floor - CurrentFloor)
 	}
-
-	cost = direction * (floor - CurrentFloor)
-
 	return cost
 }
 
@@ -239,7 +244,7 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 					cost := Calculate_cost(newOrder, DIR)
 					button := newOrder + (DIR+1) * (DIR+1)
 					message <- strings.Join([]string{strconv.FormatInt(int64(1), 10), strconv.FormatInt(int64(cost), 10), strconv.FormatInt(int64(button), 10)}, ",") 
-					fmt.Println("Returning Cost")
+					fmt.Println("Returning Cost: ", cost)
 					if DIR == 0 {
 						
 						Elev_set_button_lamp(BUTTON_CALL_UP, newOrder, 1) // Flyttes etterhvert				
@@ -294,6 +299,8 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 						}
 					}
 					ext_numberofOrders --
+					if ext_numberofOrders < 0 ext_numberofOrders = 0 // shady fix, it can go down to -1 
+					fmt.Println("Remaining external order: ", ext_numberofOrders)
 				}
 			}
 		default:

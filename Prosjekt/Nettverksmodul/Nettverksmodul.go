@@ -3,11 +3,12 @@ package Nettverksmodul
 import (
 	"fmt"
 	"net"
-	"os"
+	//"os"
 	//"runtime"
 	"strings"
 	"time"
 	//"bytes"
+
 )
 
 /* 			 Forslag til meldingsoppbygging
@@ -31,80 +32,101 @@ const (
 
 */
 
-const numberofelevators int = 255 //hvorfor 255??
+const Numberofelevators int = 5 //hvorfor 255??
 
 /* A Simple function to verify error */
 func CheckError(err error) {
 	if err != nil {
 		fmt.Println("Error: ", err)
-		os.Exit(0)
+		//os.Exit(0)
 	}
 }
 
-func Broadcast() {
+func Broadcast(message chan string, recievedmessage chan string) {
 	// rewrite to statemachine to handle reconnects
-
-	var State int = 0
 	for{
-		if State == 0{
 			BroadcastAddr, err := net.ResolveUDPAddr("udp", "129.241.187.255:20021")
-			if err != nil{
-				State = 0
-				time.Sleep(time.Second * 1)
-			}
+			if err != nil {
+				fmt.Println("Warning1: ", err)
+			}	
 			BroadcastSpammer, err := net.DialUDP("udp", nil, BroadcastAddr)
 			if err != nil{
-				State = 0
-				time.Sleep(time.Second * 1)
+				fmt.Println("Warning2: ", err)
+				buffermessage := <- message // message loopback, remove when TCP sender throws an no connection erre
+				recievedmessage <- buffermessage
 			} else {
-				State = 1
+					BroadcastSpammer.Write([]byte("Hello, i'm an elevator from group 67 - connect to me!"))
+					BroadcastSpammer.Close()
 			}
-		} else if State == 1 {
-			_ , err := BroadcastSpammer.Write([]byte("Hello, i'm an elevator from group 67 - connect to me!"))
-			if err != 0{
-				State = 0
-			} 
-			time.Sleep(time.Second * 1)
-		}
+		time.Sleep(time.Second * 1)
 	}
 }
 
-func TCP_sender(message chan string) {
+func TCP_sender(message chan string, recievedmessage chan string) {
 
 	var numberofIPs int = 0
-	var addressArray [numberofelevators]string
+	var addressArray [Numberofelevators]string
 	buf := make([]byte, 1024)
 	var State int = 0
+
+	ListenPort, err := net.ResolveUDPAddr("udp", ":20021") // initialize connections
+	if err != nil{
+		fmt.Println("Error: ", err)
+		State = 0
+		//time.Sleep(time.Second * 1)
+		fmt.Println("First error")
+	}
+	Listen, err := net.ListenUDP("udp", ListenPort)
+	if err != nil{
+		fmt.Println("Error: ", err)
+		State = 0
+		//time.Sleep(time.Second * 1)
+		fmt.Println("Second error")
+	} else {
+		State = 1
+		//fmt.Println("State = 1")
+	}
+
 	for{
 		if State == 0{
-			ListenPort, err := net.ResolveUDPAddr("udp", ":20021")
+			fmt.Println("Looking for connections")
+			buffermessage := <- message // message loopback
+			recievedmessage <- buffermessage
+
+
+			RetryListenPort, err := net.ResolveUDPAddr("udp", ":20021")
 			if err != nil{
+				fmt.Println("Error: ", err)
 				State = 0
+				time.Sleep(time.Second * 1)
 			}
-			Listen, err := net.ListenUDP("udp", ListenPort)
+			RetryListen, err := net.ListenUDP("udp", RetryListenPort)
 			if err != nil{
+				fmt.Println("Error: ", err)
 				State = 0
+				time.Sleep(time.Second * 1)
+
 			} else {
 				State = 1
 				fmt.Println("Listener address resolved")
+				Listen = RetryListen
 			}
 
 		} else if State == 1{
-
-
+			//fmt.Println("Network working")
 
 			n, addr, err := Listen.ReadFromUDP(buf)
-		//fmt.Println("Received ", string(buf[0:n]), " from ", addr)
 
 			if err != nil {
 				fmt.Println("Error: ", err)
-				Listen.Close()
+				//Listen.Close()
 				//net.ListenUDP("udp", ListenPort)
 				State = 0
-				fmt.Println("Connection closed")
+				fmt.Println("Return to looking for connections")
+				//fmt.Println("Connection closed")
 
 			} else {
-
+				//fmt.Println("Recieving messages")
 				firsthalf := strings.Split(addr.String(), ":")
 				NewIP := firsthalf[0]
 				var IPmatch bool = false
@@ -131,7 +153,7 @@ func TCP_sender(message chan string) {
 					{
 						for i := 0; i <= numberofIPs; i++ {
 							Clientaddress, err := net.ResolveTCPAddr("tcp", string(addressArray[i]+":20021"))
-							if err =! nil{
+							if err != nil{
 								fmt.Println("Disconnect :", addressArray[i])
 								for j := 0; j <= (numberofIPs - i); j++ {
 									addressArray[i+j] = addressArray[i+j+1]
@@ -149,7 +171,9 @@ func TCP_sender(message chan string) {
 
 								} else {
 									_, err = Client.Write([]byte(sendmessage))
-									CheckError(err)
+									if err != nil{
+										fmt.Println("Error: ", err)
+									}
 								}
 							}
 						}
@@ -163,11 +187,22 @@ func TCP_sender(message chan string) {
 
 func TCP_listener(recievedmessage chan string) {
 	listenPort, err := net.Listen("tcp", ":20021")
-	CheckError(err)
+	if err != nil{
+		fmt.Println("Error: ", err)
+	}
 
 	for {
 		connection, err := listenPort.Accept()
-		CheckError(err)
+		if err != nil{
+			fmt.Println("Error: ", err)
+			time.Sleep(time.Second * 1)
+			RetrylistenPort, err := net.Listen("tcp", ":20021")
+			if err != nil{
+				fmt.Println("Error: ", err)
+			} else {
+				listenPort = RetrylistenPort
+			}
+		}
 		addr := connection.RemoteAddr()
 
 		firsthalf := strings.Split(addr.String(), ":")
@@ -176,7 +211,9 @@ func TCP_listener(recievedmessage chan string) {
 		if IP != "127.0.0.1" {
 			buf := make([]byte, 1024)
 			n, err := connection.Read(buf)
-			CheckError(err)
+			if err != nil{
+				fmt.Println("Error: ", err)
+			}
 
 			address := connection.RemoteAddr().String()
 			recievedmessage <- strings.Join([]string{string(buf[0:n]), address}, ",")

@@ -3,13 +3,13 @@ package Heismodul
 import (
 	. "./driver"
 	"fmt"
-	"os"
+	//"os"
 	"time"
 )
 
 const N_FLOORS int = 4
-
-func Displayfloor(current_floor_external chan int, current_floor_internal chan int) {
+var CurrentFloor int = 0
+func Displayfloor() {
 	var oldFloor int = -1
 	var newFloor int
 	var floor int
@@ -21,9 +21,8 @@ func Displayfloor(current_floor_external chan int, current_floor_internal chan i
 				oldFloor = newFloor
 				//fmt.Println(newFloor + 1)
 				Elev_set_floor_indicator(newFloor)
-				current_floor_external <- newFloor
-				current_floor_internal <- newFloor
-				fmt.Println("Current floor is: ", oldFloor)
+				CurrentFloor = newFloor
+				
 			}
 		}
 	}
@@ -75,7 +74,8 @@ func Init_elevator() {
 			currentTime := time.Now()
 			if 2000000000 <= currentTime.Sub(startTime) {
 				fmt.Println("FAILURE, move elevator away from endstops!")
-				os.Exit(1)
+				time.Sleep(time.Second * 1)
+				//os.Exit(1)
 			}
 		}
 	}
@@ -83,8 +83,8 @@ func Init_elevator() {
 
 	//return int(oldFloor)
 }
-
-func Current_floor(current_floor_external chan int, current_floor_internal chan int) {
+/*
+func Current_floor(current_floor chan int) {
 	var floor int
 	var newFloor int
 	var oldFloor int
@@ -94,20 +94,13 @@ func Current_floor(current_floor_external chan int, current_floor_internal chan 
 			newFloor = floor
 			if newFloor != oldFloor {
 				oldFloor = newFloor
-				select {
-				case current_floor_internal <- oldFloor:
-				default:
-				}
-				select {
-				case current_floor_external <- oldFloor:
-				default:
-				}
-				fmt.Println("Current floor is: ", oldFloor)
+				current_floor = newFloor:
+				fmt.Println("Current floor is: ", newFloor)
 			}
 		}
 	}
 }
-
+*/
 func Handle_buttons(up_button chan int, down_button chan int, internal_button chan int) {
 
 	var buttonPress [3][N_FLOORS]int
@@ -155,24 +148,19 @@ func Elevator_driver(nextFloor chan int, orderFinished chan bool) {
 
 	var State int = 0
 	var Finished = false
-	var currentFloor int
+
 
 	for {
-		floor := Elev_get_floor_sensor_signal()
-		if floor >= 0 {
-			currentFloor = floor
-			//fmt.Println(currentFloor)
-		}
 
 		select {
 		case nextFloor_i := <-nextFloor:
 			fmt.Println("Going for next floor", nextFloor_i)
 			Finished = false
 
-			if (currentFloor < nextFloor_i) && (nextFloor_i <= 3) {
+			if (CurrentFloor < nextFloor_i) && (nextFloor_i <= 3) {
 				Elev_set_motor_direction(DIRN_UP)
 				fmt.Println("UP")
-			} else if (currentFloor > nextFloor_i) && (nextFloor_i >= 0) {
+			} else if (CurrentFloor > nextFloor_i) && (nextFloor_i >= 0) {
 				Elev_set_motor_direction(DIRN_DOWN)
 				fmt.Println("DOWN")
 			} else {
@@ -181,18 +169,13 @@ func Elevator_driver(nextFloor chan int, orderFinished chan bool) {
 			}
 
 			for Finished == false {
-				floor := Elev_get_floor_sensor_signal()
-				if floor >= 0 {
-					currentFloor = floor
-					//fmt.Println(currentFloor)
-				}
 
 				if State == 0 {
 
-					if currentFloor == nextFloor_i {
+					if CurrentFloor == nextFloor_i {
 						Elev_set_motor_direction(DIRN_STOP)
 						State = 1
-						fmt.Println("State 1")
+						//fmt.Println("State 1")
 					}
 
 				} else if State == 1 {

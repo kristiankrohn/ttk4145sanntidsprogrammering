@@ -299,7 +299,7 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 						}
 					}
 					ext_numberofOrders --
-					if ext_numberofOrders < 0 ext_numberofOrders = 0 // shady fix, it can go down to -1  
+					if ext_numberofOrders < 0 ext_numberofOrders = 0 // shady fix, it can go down to -1   
 					fmt.Println("Remaining external order: ", ext_numberofOrders)
 				}
 			}

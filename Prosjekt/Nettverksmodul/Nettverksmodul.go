@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 	//"bytes"
+	"strconv"
+
 
 )
 
@@ -32,7 +34,7 @@ const (
 
 */
 
-const Numberofelevators int = 5 //hvorfor 255??
+const Numberofelevators int = 5 
 
 /* A Simple function to verify error */
 func CheckError(err error) {
@@ -42,18 +44,39 @@ func CheckError(err error) {
 	}
 }
 
+func Last_byte_of_my_IP() int{ //Borrowed from https://github.com/TTK4145/Network-go/blob/master/network/localip/localip.go
+	var localIP string
+	connAddr, err := net.ResolveUDPAddr("udp", "8.8.8.8:53")
+	if err != nil {
+		err = nil
+		return 0
+	}	
+	conn, err := net.DialUDP("udp", nil, connAddr)
+	if err != nil {
+		err = nil
+		return 0
+	}	
+	localIP = strings.Split(conn.LocalAddr().String(), ":")[0]
+	lastaddressbytestring := strings.Split(localIP, ".")
+	lastaddressbyte_i64, err:= strconv.ParseInt(lastaddressbytestring[3], 10, 64)
+	CheckError(err)
+	lastaddressbyte := int(lastaddressbyte_i64)
+	return lastaddressbyte
+}
+
 func Broadcast(message chan string, recievedmessage chan string) {
 	// rewrite to statemachine to handle reconnects
 	for{
 			BroadcastAddr, err := net.ResolveUDPAddr("udp", "129.241.187.255:20021")
 			if err != nil {
-				fmt.Println("Warning1: ", err)
+				fmt.Println("Warning: ", err)
 			}	
 			BroadcastSpammer, err := net.DialUDP("udp", nil, BroadcastAddr)
 			if err != nil{
-				fmt.Println("Warning2: ", err)
+				fmt.Println("Warning: ", err)
 				buffermessage := <- message // message loopback, remove when TCP sender throws an no connection erre
-				recievedmessage <- buffermessage
+				
+				recievedmessage <- strings.Join([]string{buffermessage, "0.0.0.255:9000"}, ",")
 			} else {
 					BroadcastSpammer.Write([]byte("Hello, i'm an elevator from group 67 - connect to me!"))
 					BroadcastSpammer.Close()

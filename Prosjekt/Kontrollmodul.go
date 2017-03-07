@@ -13,7 +13,7 @@ import (
 
 //const N_FLOORS int = 4 Define this in Heismodul.go
 //const numberofelevators int = 5 //must be higher than maximum number of possible elevators, or it will cause bufferoverflow
-const arraysize int = N_FLOORS * 4 // number of buttons as a function of number of elevators
+const arraysize int = N_FLOORS * 10 // number of buttons as a function of number of elevators
 
 var orderArray [2][arraysize]int
 var ext_orderArray [2][arraysize] Extentry
@@ -82,7 +82,7 @@ func Calculate_cost(floor int, calldirection int) int{
 		} else {
 			cost = CurrentFloor - floor
 		}
-	} else{ 
+	} else { 
 		if floor > CurrentFloor{
 			if orderArray[0][0] > CurrentFloor{
 				direction = 1
@@ -171,6 +171,7 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 		select {
 		case call_up := <-up_button:
 			{
+				orderMatch = false
 				DIR = 0
 				newOrder = int(call_up)
 				for j := 0; j <= ext_numberofOrders; j++ {
@@ -193,6 +194,7 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 		select {
 		case call_down := <-down_button:
 			{
+				orderMatch = false
 				DIR = 1
 				newOrder = int(call_down)
 				for j := 0; j <= ext_numberofOrders; j++ {
@@ -242,36 +244,51 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 
 					DIR := int(direction)
 					if ext_numberofOrders < 0 {ext_numberofOrders = 0}
-					ext_orderArray[0][ext_numberofOrders] = Extentry{newOrder, time.Now()}
-					ext_orderArray[1][ext_numberofOrders] = Extentry{DIR, time.Now()}
-					ext_numberofOrders++
-					fmt.Println("Remaining external order: ", ext_numberofOrders)
-					fmt.Println("New external order array", ext_orderArray[0][0].number)
+
+					orderMatch := false
+					
+					for j := 0; j <= ext_numberofOrders; j++ {
+						if (ext_orderArray[0][j].number == newOrder) && (ext_orderArray[1][j].number == DIR) {
+							orderMatch = true
+							fmt.Println("Extorder already exist")
+						}
+					}
+					if orderMatch == false{
+						ext_orderArray[0][ext_numberofOrders] = Extentry{newOrder, time.Now()}
+						ext_orderArray[1][ext_numberofOrders] = Extentry{DIR, time.Now()}
+						ext_numberofOrders++
+						fmt.Println("Remaining external order: ", ext_numberofOrders)
+						fmt.Println("New external order array", ext_orderArray[0][0].number)
+					}
+
 					cost := Calculate_cost(newOrder, DIR)
 					button := newOrder + (DIR+1) * (DIR+1)
 					message <- strings.Join([]string{strconv.FormatInt(int64(1), 10), strconv.FormatInt(int64(cost), 10), strconv.FormatInt(int64(button), 10)}, ",") 
 					fmt.Println("Returning Cost: ", cost)
 					if DIR == 0 {
-						
+
 						Elev_set_button_lamp(BUTTON_CALL_UP, newOrder, 1) // Flyttes etterhvert?				
 					} else if DIR == 1 {
-						
+					
 						Elev_set_button_lamp(BUTTON_CALL_DOWN, newOrder, 1) // Flyttes etterhvert?	
 					}
-
+						
 				} else if messagecode == 1{
-					cost_s, err := strconv.ParseInt(slice[1], 10, 64)
+					// Slicing string and convert to useful datatypes
+					cost_i64, err := strconv.ParseInt(slice[1], 10, 64) // converting via i64
 					CheckError(err)
-					cost := int(cost_s)
-					button_s, err := strconv.ParseInt(slice[2], 10, 64)
+					cost := int(cost_i64)
+					button_i64, err := strconv.ParseInt(slice[2], 10, 64)
 					CheckError(err)
-					button := int(button_s)
+					button := int(button_i64)
 					lastaddressbytestring_pp := strings.Split(slice[3], ":")
 					lastaddressbytestring := strings.Split(lastaddressbytestring_pp[0], ".")
 					lastaddressbyte_i64, err:= strconv.ParseInt(lastaddressbytestring[3], 10, 64)
 					CheckError(err)
 					lastaddressbyte := int(lastaddressbyte_i64)
 					fmt.Println("Adding costs to array", button, numberofCosts[button].number)//Cost_array = arraysize * numberofelevators					
+					
+					// Adding cost to costarray and starting timer if it is first cost added
 					cost_array[button][numberofCosts[button].number] = Costentry{cost, lastaddressbyte}
 					if numberofCosts[button].number == 0{
 						numberofCosts[button].starttime = time.Now()
@@ -306,7 +323,7 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 					}
 					ext_numberofOrders --
 					if ext_numberofOrders < 0 {ext_numberofOrders = 0} // shady fix, it can go down to -1   
-					fmt.Println("Removed completed order, remaining: ", ext_numberofOrders)
+					fmt.Print("Removed completed externalorder, remaining: ", ext_numberofOrders)
 					fmt.Println("To floor: ", ext_orderArray[0][0].number)
 				}
 			}
@@ -334,7 +351,7 @@ func Assess_cost(nextFloor chan int) {
 				}
 				numberofCosts[i].number = 0
 				if (myIP <= min.IP) {
-					fmt.Println("I have lowest cost and taking order")
+					fmt.Println("I have lowest cost and taking order, the number in que is", numberofOrders)
 					if i < 4{
 						orderArray[0][numberofOrders] = i - 1
 						orderArray[1][numberofOrders] = 0
@@ -418,9 +435,11 @@ func Resend_externalorders(message chan string){
 	for{
 		now := time.Now()
 		for i := 0; i < ext_numberofOrders; i++{
-			if now.Sub(ext_orderArray[0][i].starttime) > 10000000000 {
+			//if external order has timed out, issue a new auction
+			if now.Sub(ext_orderArray[0][i].starttime) > 20000000000 {
 				fmt.Println("Order times out, sending new order to: ", ext_orderArray[0][i])
 				message <- strings.Join([]string{strconv.FormatInt(int64(0), 10), strconv.FormatInt(int64(ext_orderArray[0][i].number), 10), strconv.FormatInt(int64(ext_orderArray[1][i].number), 10)}, ",")
+				ext_orderArray[0][i].starttime = time.Now()
 			}
 		}
 	time.Sleep(time.Second * 2)
@@ -435,9 +454,13 @@ func main() {
 	internal_button := make(chan int, 10)
 	message := make(chan string, 20)
 	recievedmessage := make(chan string, 20)
+
 	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	Init_system()
 	fmt.Println("Init finished")
+
+
 	go Broadcast(message, recievedmessage)
 	go Elevator_driver(nextFloor, orderFinished)
 	go TCP_sender(message, recievedmessage)
@@ -450,6 +473,8 @@ func main() {
 	go Assess_cost(nextFloor)
 	go Clear_orders(orderFinished, nextFloor, message)
 	go Resend_externalorders(message)
+
+
 	deadChan := make(chan bool, 1)
 	<-deadChan
 }

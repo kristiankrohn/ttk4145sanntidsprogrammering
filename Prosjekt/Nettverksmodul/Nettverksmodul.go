@@ -34,9 +34,9 @@ const (
 
 */
 
-const Numberofelevators int = 5 
+const Numberofelevators int = 10 
 
-/* A Simple function to verify error */
+
 func CheckError(err error) {
 	if err != nil {
 		fmt.Println("Error: ", err)

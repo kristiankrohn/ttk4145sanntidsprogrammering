@@ -13,7 +13,7 @@ import (
 
 //const N_FLOORS int = 4 Define this in Heismodul.go
 //const numberofelevators int = 5 //must be higher than maximum number of possible elevators, or it will cause bufferoverflow
-const arraysize int = N_FLOORS * 3 + 1 // number of buttons as a function of number of elevators
+const arraysize int = N_FLOORS * 4 // number of buttons as a function of number of elevators
 
 var orderArray [2][arraysize]int
 var ext_orderArray [2][arraysize] Extentry
@@ -241,11 +241,12 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 					CheckError(err)
 
 					DIR := int(direction)
+					if ext_numberofOrders < 0 {ext_numberofOrders = 0}
 					ext_orderArray[0][ext_numberofOrders] = Extentry{newOrder, time.Now()}
 					ext_orderArray[1][ext_numberofOrders] = Extentry{DIR, time.Now()}
 					ext_numberofOrders++
 					fmt.Println("Remaining external order: ", ext_numberofOrders)
-					fmt.Println("New external order array", ext_orderArray)
+					fmt.Println("New external order array", ext_orderArray[0][0].number)
 					cost := Calculate_cost(newOrder, DIR)
 					button := newOrder + (DIR+1) * (DIR+1)
 					message <- strings.Join([]string{strconv.FormatInt(int64(1), 10), strconv.FormatInt(int64(cost), 10), strconv.FormatInt(int64(button), 10)}, ",") 
@@ -270,7 +271,7 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 					lastaddressbyte_i64, err:= strconv.ParseInt(lastaddressbytestring[3], 10, 64)
 					CheckError(err)
 					lastaddressbyte := int(lastaddressbyte_i64)
-					fmt.Println("Adding costs to array")					
+					fmt.Println("Adding costs to array", button, numberofCosts[button].number)//Cost_array = arraysize * numberofelevators					
 					cost_array[button][numberofCosts[button].number] = Costentry{cost, lastaddressbyte}
 					if numberofCosts[button].number == 0{
 						numberofCosts[button].starttime = time.Now()
@@ -305,8 +306,8 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 					}
 					ext_numberofOrders --
 					if ext_numberofOrders < 0 {ext_numberofOrders = 0} // shady fix, it can go down to -1   
-					fmt.Println("Remaining external order: ", ext_numberofOrders)
-					fmt.Println(ext_orderArray)
+					fmt.Println("Removed completed order, remaining: ", ext_numberofOrders)
+					fmt.Println("To floor: ", ext_orderArray[0][0].number)
 				}
 			}
 		default:
@@ -422,7 +423,7 @@ func Resend_externalorders(message chan string){
 				message <- strings.Join([]string{strconv.FormatInt(int64(0), 10), strconv.FormatInt(int64(ext_orderArray[0][i].number), 10), strconv.FormatInt(int64(ext_orderArray[1][i].number), 10)}, ",")
 			}
 		}
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 2)
 	}
 }
 func main() {

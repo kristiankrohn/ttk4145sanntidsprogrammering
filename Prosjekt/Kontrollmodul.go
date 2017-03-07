@@ -16,7 +16,7 @@ import (
 const arraysize int = N_FLOORS * 3 + 1 // number of buttons as a function of number of elevators
 
 var orderArray [2][arraysize]int
-var ext_orderArray [2][arraysize]int
+var ext_orderArray [2][arraysize] Extentry
 var cost_array[arraysize][Numberofelevators] Costentry
 var numberofCosts[arraysize] Costnumber
 var numberofOrders int
@@ -33,7 +33,10 @@ type Costnumber struct{
 	starttime time.Time
 }
 
-
+type Extentry struct{
+	number int
+	starttime time.Time
+}
 /* 	direction up = 0
 *	direction down = 1
 *	direction internal = 2
@@ -49,7 +52,7 @@ func Init_system() {
 
 	for i := 0; i < 2; i++ {
 		for j := 0; j < arraysize; j++ {
-			ext_orderArray[i][j] = -1
+			ext_orderArray[i][j] = Extentry{-1, time.Now()}
 		}
 	}
 
@@ -170,8 +173,8 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 			{
 				DIR = 0
 				newOrder = int(call_up)
-				for j := 0; j <= numberofOrders; j++ {
-					if (orderArray[0][j] == newOrder) && (orderArray[1][j] == DIR) {
+				for j := 0; j <= ext_numberofOrders; j++ {
+					if (ext_orderArray[0][j].number == newOrder) && (ext_orderArray[1][j].number == DIR) {
 						orderMatch = true
 						fmt.Println("Order already exist")
 					}
@@ -192,8 +195,8 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 			{
 				DIR = 1
 				newOrder = int(call_down)
-				for j := 0; j <= numberofOrders; j++ {
-					if (orderArray[0][j] == newOrder) && (orderArray[1][j] == DIR) {
+				for j := 0; j <= ext_numberofOrders; j++ {
+					if (ext_orderArray[0][j].number == newOrder) && (ext_orderArray[1][j].number == DIR) {
 						orderMatch = true
 						fmt.Println("Order already exist")
 					}
@@ -238,19 +241,21 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 					CheckError(err)
 
 					DIR := int(direction)
-					ext_orderArray[0][ext_numberofOrders] = newOrder
-					ext_orderArray[1][ext_numberofOrders] = DIR
+					ext_orderArray[0][ext_numberofOrders] = Extentry{newOrder, time.Now()}
+					ext_orderArray[1][ext_numberofOrders] = Extentry{DIR, time.Now()}
 					ext_numberofOrders++
+					fmt.Println("Remaining external order: ", ext_numberofOrders)
+					fmt.Println("New external order array", ext_orderArray)
 					cost := Calculate_cost(newOrder, DIR)
 					button := newOrder + (DIR+1) * (DIR+1)
 					message <- strings.Join([]string{strconv.FormatInt(int64(1), 10), strconv.FormatInt(int64(cost), 10), strconv.FormatInt(int64(button), 10)}, ",") 
 					fmt.Println("Returning Cost: ", cost)
 					if DIR == 0 {
 						
-						Elev_set_button_lamp(BUTTON_CALL_UP, newOrder, 1) // Flyttes etterhvert				
+						Elev_set_button_lamp(BUTTON_CALL_UP, newOrder, 1) // Flyttes etterhvert?				
 					} else if DIR == 1 {
 						
-						Elev_set_button_lamp(BUTTON_CALL_DOWN, newOrder, 1) // Flyttes etterhvert	
+						Elev_set_button_lamp(BUTTON_CALL_DOWN, newOrder, 1) // Flyttes etterhvert?	
 					}
 
 				} else if messagecode == 1{
@@ -290,7 +295,7 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 					}
 					Elev_set_button_lamp(Button, floor, 0)
 					for i := 0; i < ext_numberofOrders; i++{
-						if (ext_orderArray[0][i] == floor) && (ext_orderArray[1][i] == DIR){
+						if (ext_orderArray[0][i].number == floor) && (ext_orderArray[1][i].number == DIR){
 							for j:= i; j < ext_numberofOrders; j++{
 								ext_orderArray[0][j] = ext_orderArray[0][j + 1]
 								ext_orderArray[1][j] = ext_orderArray[1][j + 1]
@@ -299,8 +304,9 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 						}
 					}
 					ext_numberofOrders --
-					if ext_numberofOrders < 0 ext_numberofOrders = 0 // shady fix, it can go down to -1   
+					if ext_numberofOrders < 0 {ext_numberofOrders = 0} // shady fix, it can go down to -1   
 					fmt.Println("Remaining external order: ", ext_numberofOrders)
+					fmt.Println(ext_orderArray)
 				}
 			}
 		default:
@@ -316,9 +322,9 @@ func Assess_cost(nextFloor chan int) {
 		for i := 0; i < arraysize; i++{
 			now := time.Now()
 			//fmt.Println("checking for ordertimeouts: ", i)
-			if (now.Sub(numberofCosts[i].starttime) > 1000000000) && (numberofCosts[i].number > 0){ // check for timeout, if timeout, assess costarray
+			if (now.Sub(numberofCosts[i].starttime) > 500000000) && (numberofCosts[i].number > 0){ // check for timeout, if timeout, assess costarray
 				var min Costentry = cost_array[i][0]
-				fmt.Println("Order timeout, assessing cost")
+				fmt.Println("Order auction ended, assessing cost")
 				for j := 0; j < numberofCosts[i].number; j++{
 					if min.cost > cost_array[i][j].cost{
 						min.cost = cost_array[i][j].cost
@@ -342,6 +348,8 @@ func Assess_cost(nextFloor chan int) {
 						nextFloor <- orderArray[0][0]
 						fmt.Println("Next floor is: ", orderArray[0][0])
 					}
+				} else {
+					fmt.Println("I did not have lowest cost and did not take the order")
 				}
 			}
 		}
@@ -365,9 +373,9 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 						Button = BUTTON_CALL_UP
 						//clear external order array
 						for i := 0; i < ext_numberofOrders; i++{
-							if ext_orderArray[1][i] == 0{
-								if ext_orderArray[0][i] == CurrentFloor{
-									message <- strings.Join([]string{strconv.FormatInt(int64(2), 10), strconv.FormatInt(int64(ext_orderArray[0][i]), 10), strconv.FormatInt(int64(ext_orderArray[1][i]), 10)}, ",")
+							if ext_orderArray[1][i].number == 0{
+								if ext_orderArray[0][i].number == CurrentFloor{
+									message <- strings.Join([]string{strconv.FormatInt(int64(2), 10), strconv.FormatInt(int64(ext_orderArray[0][i].number), 10), strconv.FormatInt(int64(ext_orderArray[1][i].number), 10)}, ",")
 								}
 							}
 						}
@@ -375,9 +383,9 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 						Button = BUTTON_CALL_DOWN
 						//clear external order array
 						for i := 0; i < ext_numberofOrders; i++{
-							if ext_orderArray[1][i] == 1{
-								if ext_orderArray[0][i] == CurrentFloor{
-									message <- strings.Join([]string{strconv.FormatInt(int64(2), 10), strconv.FormatInt(int64(ext_orderArray[0][i]), 10), strconv.FormatInt(int64(ext_orderArray[1][i]), 10)}, ",")
+							if ext_orderArray[1][i].number == 1{
+								if ext_orderArray[0][i].number == CurrentFloor{
+									message <- strings.Join([]string{strconv.FormatInt(int64(2), 10), strconv.FormatInt(int64(ext_orderArray[0][i].number), 10), strconv.FormatInt(int64(ext_orderArray[1][i].number), 10)}, ",")
 								}
 							}
 						}
@@ -405,6 +413,18 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 	}
 }
 
+func Resend_externalorders(message chan string){
+	for{
+		now := time.Now()
+		for i := 0; i < ext_numberofOrders; i++{
+			if now.Sub(ext_orderArray[0][i].starttime) > 10000000000 {
+				fmt.Println("Order times out, sending new order to: ", ext_orderArray[0][i])
+				message <- strings.Join([]string{strconv.FormatInt(int64(0), 10), strconv.FormatInt(int64(ext_orderArray[0][i].number), 10), strconv.FormatInt(int64(ext_orderArray[1][i].number), 10)}, ",")
+			}
+		}
+	time.Sleep(time.Second * 1)
+	}
+}
 func main() {
 
 	nextFloor := make(chan int, 10)
@@ -428,7 +448,7 @@ func main() {
 	go Incomming_message(recievedmessage, message)
 	go Assess_cost(nextFloor)
 	go Clear_orders(orderFinished, nextFloor, message)
-
+	go Resend_externalorders(message)
 	deadChan := make(chan bool, 1)
 	<-deadChan
 }

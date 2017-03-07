@@ -58,6 +58,7 @@ func Last_byte_of_my_IP() int{ //Borrowed from https://github.com/TTK4145/Networ
 	}	
 	localIP = strings.Split(conn.LocalAddr().String(), ":")[0]
 	lastaddressbytestring := strings.Split(localIP, ".")
+	conn.Close()
 	lastaddressbyte_i64, err:= strconv.ParseInt(lastaddressbytestring[3], 10, 64)
 	CheckError(err)
 	lastaddressbyte := int(lastaddressbyte_i64)

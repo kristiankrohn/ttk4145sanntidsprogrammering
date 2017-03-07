@@ -31,13 +31,17 @@
   * Vis hvilken etasje vi er i
   
 ## Kontrollmodul
-* Beregn_kostnad(intern kø og antall ordrer)
-  * Se på intern ordrekø og beregn kostnad og send den ut på nettverket
-* Ekstern_ordre
-  * Publiser ordren på nettverket, publiser på nytt dersom timeout
-* Inkommende_ordre
-  * Legg ordren til i lokalt ordrearray
-* Vurder_kostnad
+* Init_system()
+  * Initialiser arrays
+* Calculate_cost(floor, calldirection)(cost)
+  * Se på intern ordrekø og beregn kostnad og send den tilbake
+* Local_orders(internal_button chan, nextFloor chan, orderFinished chan)
+  * Sjekker om ordren finnes fra før og legg til i internt ordrearray
+* Eksternal_ordrers(message chan, up_button chan, down_button chan, nextFloor chan)
+  * Publiser ordren på nettverket
+* Incomming_message()
+  * Ta imot eksterne ordre fra nett, publiser på nytt dersom timeout, ta i mot kostnader og legg til til i costarray, slett externe ordrer ved kvittering, legg til nye ordre i externt ordrearray
+* Assess_cost
   * Se på innkommende kostnader og vurder og vi skal utføre ordren og legg til i intern ordrekø
-* Kvitter_ordre
-  * Dersom utført ekstern ordre, send kvittering ut på nettverket
+* Clear_orders
+  * fjern ordre fra lokalt ordrearray, send kvittering ut på nettverket dersom fullført ekstern ordre

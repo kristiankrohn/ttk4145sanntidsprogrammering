@@ -104,7 +104,7 @@ func Calculate_cost(floor int, calldirection int) int{
 			cost = direction * (CurrentFloor - floor)
 		}
 	}
-	return cost
+	return cost * numberofOrders
 }
 
 func Local_orders(internal_button chan int, nextFloor chan int, orderFinished chan bool) {
@@ -226,7 +226,10 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 	//check om ordre allerede er i køen
 	//legg til hvis ikke
 	//fjern intern ordre fra kø når ordren er fullført
-	
+
+	//sorry for using strings :(
+	//its a complete mess, but it works
+
 	for {
 		select {
 		case newOrder := <-recievedmessage:
@@ -236,6 +239,8 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 				// 1 = cost
 				// 3 = kvittering
 				//fmt.Print(newOrder)
+
+
 				slice := strings.Split(newOrder, ",")
 
 				messagecode , err := strconv.ParseInt(slice[0], 10, 64)
@@ -356,16 +361,17 @@ func Assess_cost(nextFloor chan int) {
 			now := time.Now()
 			//fmt.Println("checking for ordertimeouts: ", i)
 			if (now.Sub(numberofCosts[i].starttime) > 1000000000) && (numberofCosts[i].number > 0){ // check for timeout, if timeout, assess costarray
-				var min Costentry = cost_array[i][0]
+				min := Costentry{9000, myIP} 
 				fmt.Println("Order auction ended, assessing cost")
 				for j := 0; j < numberofCosts[i].number; j++{
 					if min.cost > cost_array[i][j].cost{
 						min.cost = cost_array[i][j].cost
+						min.IP = cost_array[i][j].IP
 					}
 
 				}
 				numberofCosts[i].number = 0
-				if (myIP <= min.IP) {
+				if (myIP == min.IP) {
 					fmt.Println("I have lowest cost and taking order, the number in que is", numberofOrders)
 					if i < 4{
 						orderArray[0][numberofOrders] = i - 1

@@ -377,19 +377,17 @@ func Assess_cost(nextFloor chan int) {
 		for i := 0; i < arraysize; i++ {
 			now := time.Now()
 			//fmt.Println("checking for ordertimeouts: ", i)
-			if (now.Sub(numberofCosts[i].starttime) > 500000000) && (numberofCosts[i].number > 0) { // check for timeout, if timeout, assess costarray
+			if (now.Sub(numberofCosts[i].starttime) > 1000000000) && (numberofCosts[i].number > 0) { // check for timeout, if timeout, assess costarray
 				min := Costentry{9000, cost_array[i][0].IP}
 				fmt.Println("Order auction ended, assessing cost")
 				for j := 0; j < numberofCosts[i].number; j++ {
 
 					//Sjekker hvilket bidrag som har lavest kost
 					if cost_array[i][j].cost < min.cost {
-						min.cost = cost_array[i][j].cost
-						min.IP = cost_array[i][j].IP
+						min = cost_array[i][j]
 						//Dersom kosten er den samme som vår kost, men vår IP er lavere, så tar vi oppdraget
 					} else if (min.cost == cost_array[i][j].cost) && (myIP <= min.IP) {
-						min.cost = cost_array[i][j].cost
-						min.IP = cost_array[i][j].IP
+						min = cost_array[i][j]
 					}
 
 				}

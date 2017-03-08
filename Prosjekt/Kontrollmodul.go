@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	
 )
 
 //const N_FLOORS int = 4 Define this in Heismodul.go
@@ -465,6 +466,11 @@ func Resend_externalorders(message chan string){
 	time.Sleep(time.Second * 2)
 	}
 }
+
+func Backup_localorders(){
+
+}
+
 func main() {
 
 	nextFloor := make(chan int, 10)

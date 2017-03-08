@@ -15,7 +15,7 @@ import (
 //const numberofelevators int = 5 //must be higher than maximum number of possible elevators, or it will cause bufferoverflow
 const arraysize int = N_FLOORS * 10 // number of buttons as a function of number of elevators
 
-var orderArray [2][arraysize]int
+var orderArray [arraysize] Orderentry
 var ext_orderArray [2][arraysize] Extentry
 var cost_array[arraysize][Numberofelevators] Costentry
 var numberofCosts[arraysize] Costnumber
@@ -48,11 +48,11 @@ type Extentry struct{
 
 func Init_system() {
 	Init_elevator()
-	for i := 0; i < 2; i++ {
-		for j := 0; j < arraysize; j++ {
-			orderArray[i][j] = -1
-		}
+	
+	for j := 0; j < arraysize; j++ {
+		orderArray[j] = Orderentry{-1, -1}
 	}
+	
 
 	for i := 0; i < 2; i++ {
 		for j := 0; j < arraysize; j++ {
@@ -89,14 +89,14 @@ func Calculate_cost(floor int, calldirection int) int{
 		}
 	} else { 
 		if floor > CurrentFloor{
-			if orderArray[0][0] > CurrentFloor{
+			if orderArray[0].floor > CurrentFloor{
 				direction = 1
 			} else {
 				direction = 2
 			}
 			cost = direction * (floor - CurrentFloor)
 		} else {
-			if orderArray[0][0] > CurrentFloor{
+			if orderArray[0].floor > CurrentFloor{
 				direction = 2
 			} else {
 				direction = 1
@@ -121,7 +121,7 @@ func Local_orders(internal_button chan int, nextFloor chan int, orderFinished ch
 			{
 				newOrder := int(internal_call)
 				for j := 0; j <= numberofOrders; j++ {
-					if (orderArray[0][j] == newOrder) && (orderArray[1][j] == 2) {
+					if (orderArray[j].floor == newOrder) && (orderArray[j].button == 2) {
 						orderMatch = true
 						fmt.Println("Order already exist")
 					}
@@ -130,14 +130,14 @@ func Local_orders(internal_button chan int, nextFloor chan int, orderFinished ch
 				if orderMatch == false {
 					//if (orderMatch == false) && (currentFloor != newOrder) {
 					//fmt.Println("Current floor is: ", currentFloor)
-					orderArray[0][numberofOrders] = newOrder
-					orderArray[1][numberofOrders] = 2
+					orderArray[numberofOrders] = Orderentry{newOrder, 2}
+					//orderArray[1][numberofOrders] = 2
 					fmt.Println("New order at floor: ", newOrder)
-					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[0][numberofOrders], 1)
+					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[numberofOrders].floor, 1)
 					numberofOrders++
 					if numberofOrders == 1 {
-						nextFloor <- orderArray[0][0]
-						fmt.Println("Next floor is: ", orderArray[0][0])
+						nextFloor <- orderArray[0].floor
+						fmt.Println("Next floor is: ", orderArray[0].floor)
 					}
 				}
 			}
@@ -374,21 +374,19 @@ func Assess_cost(nextFloor chan int) {
 				if (myIP == min.IP) {
 					fmt.Println("I have lowest cost and taking order, the number in que is", numberofOrders)
 					if i < 4{
-						orderArray[0][numberofOrders] = i - 1
-						orderArray[1][numberofOrders] = 0
+						orderArray[numberofOrders] = Orderentry{(i - 1), 0}
 
 					} else {
-						orderArray[0][numberofOrders] = i - 4
-						orderArray[1][numberofOrders] = 1
+						orderArray[numberofOrders] = Orderentry{(i - 4), 1}
 
 					}
 					numberofOrders ++
 
 					if numberofOrders == 1 {
 						fmt.Println("This is first order and sending to elevator")
-						nextFloor <- orderArray[0][0]
+						nextFloor <- orderArray[0].floor
 
-						fmt.Println("Next floor is: ", orderArray[0][0])
+						fmt.Println("Next floor is: ", orderArray[0].floor)
 					}
 				} else {
 					fmt.Println("I did not have lowest cost and did not take the order")
@@ -411,7 +409,7 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 			select {
 			case orderFinished_i := <-orderFinished:
 				if orderFinished_i == true {
-					if orderArray[1][0] == 0 { // Internal
+					if orderArray[0].button == 0 { // Internal
 						Button = BUTTON_CALL_UP
 						//clear external order array
 						for i := 0; i < ext_numberofOrders; i++{
@@ -421,7 +419,7 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 								}
 							}
 						}
-					} else if orderArray[1][0] == 1 {
+					} else if orderArray[0].button == 1 {
 						Button = BUTTON_CALL_DOWN
 						//clear external order array
 						for i := 0; i < ext_numberofOrders; i++{
@@ -434,17 +432,16 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 					} else {
 						Button = BUTTON_COMMAND
 					}
-					Elev_set_button_lamp(Button, orderArray[0][0], 0)
-					fmt.Println("Order to floor: ", orderArray[0][0], " finished, removed from que")
+					Elev_set_button_lamp(Button, orderArray[0].floor, 0)
+					fmt.Println("Order to floor: ", orderArray[0].button, " finished, removed from que")
 					for i := 0; i < numberofOrders; i++ {
-						orderArray[0][i] = orderArray[0][i+1]
-						orderArray[1][i] = orderArray[1][i+1]
+						orderArray[i] = orderArray[i+1]
 					}
 					numberofOrders--
 					fmt.Println("Number of orders: ", numberofOrders)
 					if numberofOrders >= 1 {
-						nextFloor <- orderArray[0][0]
-						fmt.Println("Next floor is: ", orderArray[0][0])
+						nextFloor <- orderArray[0].floor
+						fmt.Println("Next floor is: ", orderArray[0].floor)
 					}
 
 					

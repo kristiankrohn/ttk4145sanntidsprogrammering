@@ -16,7 +16,7 @@ import (
 const arraysize int = N_FLOORS * 10 // number of buttons as a function of number of elevators
 
 var orderArray [arraysize] Orderentry
-var ext_orderArray [2][arraysize] Extentry
+var ext_orderArray [arraysize] Extentry
 var cost_array[arraysize][Numberofelevators] Costentry
 var numberofCosts[arraysize] Costnumber
 var numberofOrders int
@@ -38,7 +38,8 @@ type Costnumber struct{
 }
 
 type Extentry struct{
-	number int
+	floor int
+	button int
 	starttime time.Time
 }
 /* 	direction up = 0
@@ -54,10 +55,8 @@ func Init_system() {
 	}
 	
 
-	for i := 0; i < 2; i++ {
-		for j := 0; j < arraysize; j++ {
-			ext_orderArray[i][j] = Extentry{-1, time.Now()}
-		}
+	for j := 0; j < arraysize; j++ {
+		ext_orderArray[j] = Extentry{-1, -1, time.Now()}
 	}
 
 	for i := 0; i < arraysize; i++{
@@ -181,7 +180,7 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 				DIR = 0
 				newOrder = int(call_up)
 				for j := 0; j <= ext_numberofOrders; j++ {
-					if (ext_orderArray[0][j].number == newOrder) && (ext_orderArray[1][j].number == DIR) {
+					if (ext_orderArray[j].floor == newOrder) && (ext_orderArray[j].button == DIR) {
 						orderMatch = true
 						fmt.Println("Order already exist")
 					}
@@ -204,7 +203,7 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 				DIR = 1
 				newOrder = int(call_down)
 				for j := 0; j <= ext_numberofOrders; j++ {
-					if (ext_orderArray[0][j].number == newOrder) && (ext_orderArray[1][j].number == DIR) {
+					if (ext_orderArray[j].floor == newOrder) && (ext_orderArray[j].button == DIR) {
 						orderMatch = true
 						fmt.Println("Order already exist")
 					}
@@ -267,18 +266,17 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 					orderMatch := false
 					
 					for j := 0; j <= ext_numberofOrders; j++ {
-						if (ext_orderArray[0][j].number == newOrder) && (ext_orderArray[1][j].number == DIR) {
+						if (ext_orderArray[j].floor == newOrder) && (ext_orderArray[j].button == DIR) {
 							orderMatch = true
 							fmt.Println("Extorder already exist")
 						}
 					}
 					if orderMatch == false{ // we have a new order that doesn't exist in the array
-						ext_orderArray[0][ext_numberofOrders] = Extentry{newOrder, time.Now()}
-						ext_orderArray[1][ext_numberofOrders] = Extentry{DIR, time.Now()}
+						ext_orderArray[ext_numberofOrders] = Extentry{newOrder, DIR, time.Now()}
 						ext_numberofOrders++
 
 						fmt.Println("Remaining external order: ", ext_numberofOrders)
-						fmt.Println("New external order array", ext_orderArray[0][0].number)
+						fmt.Println("New external order array", ext_orderArray[0].floor)
 					}
 
 					cost := Calculate_cost(newOrder, DIR)
@@ -331,15 +329,14 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 					Elev_set_button_lamp(Button, floor, 0)
 
 					for i := 0; i < ext_numberofOrders; i++{
-						if (ext_orderArray[0][i].number == floor) && (ext_orderArray[1][i].number == DIR){
+						if (ext_orderArray[i].floor == floor) && (ext_orderArray[i].button == DIR){
 							for j:= i; j < ext_numberofOrders; j++{
-								ext_orderArray[0][j] = ext_orderArray[0][j + 1]
-								ext_orderArray[1][j] = ext_orderArray[1][j + 1]
+								ext_orderArray[j] = ext_orderArray[j + 1]
 								i = j
 							}
 							ext_numberofOrders --
 							fmt.Print("Removed completed externalorder, remaining: ", ext_numberofOrders)
-							fmt.Println(" First is to floor: ", ext_orderArray[0][0].number)
+							fmt.Println(" First is to floor: ", ext_orderArray[0].floor)
 						}
 					}
 
@@ -413,9 +410,9 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 						Button = BUTTON_CALL_UP
 						//clear external order array
 						for i := 0; i < ext_numberofOrders; i++{
-							if ext_orderArray[1][i].number == 0{
-								if ext_orderArray[0][i].number == CurrentFloor{
-									message <- strings.Join([]string{strconv.FormatInt(int64(2), 10), strconv.FormatInt(int64(ext_orderArray[0][i].number), 10), strconv.FormatInt(int64(ext_orderArray[1][i].number), 10)}, ",")
+							if ext_orderArray[i].button == 0{
+								if ext_orderArray[i].floor == CurrentFloor{
+									message <- strings.Join([]string{strconv.FormatInt(int64(2), 10), strconv.FormatInt(int64(ext_orderArray[i].floor), 10), strconv.FormatInt(int64(ext_orderArray[i].button), 10)}, ",")
 								}
 							}
 						}
@@ -423,9 +420,9 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 						Button = BUTTON_CALL_DOWN
 						//clear external order array
 						for i := 0; i < ext_numberofOrders; i++{
-							if ext_orderArray[1][i].number == 1{
-								if ext_orderArray[0][i].number == CurrentFloor{
-									message <- strings.Join([]string{strconv.FormatInt(int64(2), 10), strconv.FormatInt(int64(ext_orderArray[0][i].number), 10), strconv.FormatInt(int64(ext_orderArray[1][i].number), 10)}, ",")
+							if ext_orderArray[i].button == 1{
+								if ext_orderArray[i].floor == CurrentFloor{
+									message <- strings.Join([]string{strconv.FormatInt(int64(2), 10), strconv.FormatInt(int64(ext_orderArray[i].floor), 10), strconv.FormatInt(int64(ext_orderArray[i].button), 10)}, ",")
 								}
 							}
 						}
@@ -458,10 +455,10 @@ func Resend_externalorders(message chan string){
 		if ext_numberofOrders > 0{
 			for i := 0; i < ext_numberofOrders; i++{
 			//if external order has timed out, issue a new auction
-				if now.Sub(ext_orderArray[0][i].starttime) > 20000000000 {
-					fmt.Println("Order times out, sending new order to: ", ext_orderArray[0][i])
-					message <- strings.Join([]string{strconv.FormatInt(int64(0), 10), strconv.FormatInt(int64(ext_orderArray[0][i].number), 10), strconv.FormatInt(int64(ext_orderArray[1][i].number), 10)}, ",")
-					ext_orderArray[0][i].starttime = time.Now()
+				if now.Sub(ext_orderArray[i].starttime) > 20000000000 {
+					fmt.Println("Order times out, sending new order to: ", ext_orderArray[i])
+					message <- strings.Join([]string{strconv.FormatInt(int64(0), 10), strconv.FormatInt(int64(ext_orderArray[i].floor), 10), strconv.FormatInt(int64(ext_orderArray[i].button), 10)}, ",")
+					ext_orderArray[i].starttime = time.Now()
 				}
 			}
 		}

@@ -147,13 +147,15 @@ func Handle_buttons(up_button chan int, down_button chan int, internal_button ch
 func Elevator_driver(nextFloor chan int, orderFinished chan bool) {
 
 	var State int = 0
-	var Finished = false
+	var Finished = true
 
-
+	//var nextFloor_i int
 	for {
 
 		select {
 		case nextFloor_i := <-nextFloor:
+			//nextFloor_i = int(nextFloor_ci)
+			Finished = false
 			fmt.Println("Going for next floor", nextFloor_i)
 			Finished = false
 
@@ -193,5 +195,9 @@ func Elevator_driver(nextFloor chan int, orderFinished chan bool) {
 		default:
 			//Elev_set_motor_direction(DIRN_STOP)
 		}
+
+
+		//fmt.Println("Going for next floor", nextFloor_i)
+ 
 	}
 }

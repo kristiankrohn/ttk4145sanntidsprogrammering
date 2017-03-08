@@ -104,7 +104,7 @@ func Calculate_cost(floor int, calldirection int) int{
 			cost = direction * (CurrentFloor - floor)
 		}
 	}
-	return cost * numberofOrders
+	return cost * (numberofOrders + 1)
 }
 
 func Local_orders(internal_button chan int, nextFloor chan int, orderFinished chan bool) {

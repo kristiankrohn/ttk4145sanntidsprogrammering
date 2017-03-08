@@ -387,9 +387,12 @@ func Assess_cost(nextFloor chan int) {
 						min = cost_array[i][j]
 						//Dersom kosten er den samme som vår kost, men vår IP er lavere, så tar vi oppdraget
 					} else if min.cost == cost_array[i][j].cost {
+						fmt.Println("min.IP = ", min.IP)
 						if myIP <= min.IP {
 							min = cost_array[i][j]
-							fmt.Println("Same cost, i have lowest IP")
+							fmt.Println("Same cost, i have lowest IP of: ", myIP)
+						} else {
+							fmt.Println("Same cost but i have higer IP of: ", myIP)
 						}
 					}
 

@@ -8,7 +8,9 @@ import (
 )
 
 const N_FLOORS int = 4
+
 var CurrentFloor int = 0
+
 func Displayfloor() {
 	var oldFloor int = -1
 	var newFloor int
@@ -22,7 +24,7 @@ func Displayfloor() {
 				//fmt.Println(newFloor + 1)
 				Elev_set_floor_indicator(newFloor)
 				CurrentFloor = newFloor
-				
+
 			}
 		}
 	}
@@ -45,7 +47,7 @@ func Init_elevator() {
 				oldFloor = newFloor
 				foundFloor = true
 				Elev_set_motor_direction(DIRN_STOP)
-				
+
 				break
 			}
 		}
@@ -67,7 +69,7 @@ func Init_elevator() {
 					oldFloor = newFloor
 					foundFloor = true
 					Elev_set_motor_direction(DIRN_STOP)
-					
+
 					break
 				}
 			}
@@ -83,6 +85,7 @@ func Init_elevator() {
 
 	//return int(oldFloor)
 }
+
 /*
 func Current_floor(current_floor chan int) {
 	var floor int
@@ -147,17 +150,17 @@ func Handle_buttons(up_button chan int, down_button chan int, internal_button ch
 func Elevator_driver(nextFloor chan int, orderFinished chan bool) {
 
 	var State int = 0
-	var Finished = true
+	var Finished = false
+	//var startTime time.Time
+	var nextFloor_i int = -1
 
-	//var nextFloor_i int
 	for {
 
 		select {
-		case nextFloor_i := <-nextFloor:
-			//nextFloor_i = int(nextFloor_ci)
+		case nextFloor_ci := <-nextFloor:
+			nextFloor_i = int(nextFloor_ci)
 			Finished = false
 			fmt.Println("Going for next floor", nextFloor_i)
-			Finished = false
 
 			if (CurrentFloor < nextFloor_i) && (nextFloor_i <= 3) {
 				Elev_set_motor_direction(DIRN_UP)
@@ -195,9 +198,39 @@ func Elevator_driver(nextFloor chan int, orderFinished chan bool) {
 		default:
 			//Elev_set_motor_direction(DIRN_STOP)
 		}
+		/*
+			if State == 0 {
+				if (CurrentFloor < nextFloor_i) && (nextFloor_i <= 3) {
+					Elev_set_motor_direction(DIRN_UP)
+					//fmt.Println("UP")
+				} else if (CurrentFloor > nextFloor_i) && (nextFloor_i >= 0) {
+					Elev_set_motor_direction(DIRN_DOWN)
+					//fmt.Println("DOWN")
+				} else {
+					Elev_set_motor_direction(DIRN_STOP)
+					//fmt.Println("STOP")
+				}
 
+				if (CurrentFloor == nextFloor_i) && (Finished == false) {
+					Elev_set_motor_direction(DIRN_STOP)
+					State = 1
+					//Finished = true
+					startTime = time.Now()
 
-		//fmt.Println("Going for next floor", nextFloor_i)
- 
+					fmt.Println("Orderfinished = true")
+				}
+
+			} else if State == 1 {
+				Elev_set_door_open_lamp(1)
+				currentTime := time.Now()
+				if currentTime.Sub(startTime) >= 1000000000 {
+					Elev_set_door_open_lamp(0)
+					orderFinished <- true
+					fmt.Println("Ready for new floor")
+					State = 0
+					Finished = true
+				}
+			}*/
+
 	}
 }

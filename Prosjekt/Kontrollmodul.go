@@ -378,7 +378,7 @@ func Assess_cost(nextFloor chan int) {
 			now := time.Now()
 			//fmt.Println("checking for ordertimeouts: ", i)
 			if (now.Sub(numberofCosts[i].starttime) > 1000000000) && (numberofCosts[i].number > 0) { // check for timeout, if timeout, assess costarray
-				min := Costentry{9000, cost_array[i][0].IP}
+				min := Costentry{9000, myIP}
 				fmt.Println("Order auction ended, assessing cost")
 				for j := 0; j < numberofCosts[i].number; j++ {
 
@@ -386,8 +386,10 @@ func Assess_cost(nextFloor chan int) {
 					if cost_array[i][j].cost < min.cost {
 						min = cost_array[i][j]
 						//Dersom kosten er den samme som vår kost, men vår IP er lavere, så tar vi oppdraget
-					} else if (min.cost == cost_array[i][j].cost) && (myIP <= min.IP) {
-						min = cost_array[i][j]
+					} else if min.cost == cost_array[i][j] {
+						if myIP <= min.IP {
+							min = cost_array[i][j]
+						}
 					}
 
 				}

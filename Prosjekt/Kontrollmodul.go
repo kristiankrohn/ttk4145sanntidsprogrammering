@@ -400,7 +400,7 @@ func Assess_cost(nextFloor chan int) {
 				numberofCosts[i].number = 0
 				if myIP == min.IP {
 
-					fmt.Println("I have lowest cost and taking order, the number in que is", numberofOrders)
+					fmt.Println("I have lowest cost or cost&IP and taking order, the number in que is", numberofOrders)
 
 					if i < 4 {
 						orderArray[numberofOrders] = Orderentry{(i - 1), 0}
@@ -503,13 +503,13 @@ func Backup_localorders() {
 
 func main() {
 
-	nextFloor := make(chan int, 10)
-	orderFinished := make(chan bool, 1)
-	up_button := make(chan int, 10)
-	down_button := make(chan int, 10)
-	internal_button := make(chan int, 10)
-	message := make(chan string, 20)
-	recievedmessage := make(chan string, 20)
+	nextFloor := make(chan int, 100)
+	orderFinished := make(chan bool, 5)
+	up_button := make(chan int, 100)
+	down_button := make(chan int, 100)
+	internal_button := make(chan int, 100)
+	message := make(chan string, 200)
+	recievedmessage := make(chan string, 200)
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 

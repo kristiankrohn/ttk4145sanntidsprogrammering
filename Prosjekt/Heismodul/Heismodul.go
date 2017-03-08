@@ -45,7 +45,7 @@ func Init_elevator() {
 				oldFloor = newFloor
 				foundFloor = true
 				Elev_set_motor_direction(DIRN_STOP)
-				fmt.Println("FoundFloorUP")
+				
 				break
 			}
 		}
@@ -67,7 +67,7 @@ func Init_elevator() {
 					oldFloor = newFloor
 					foundFloor = true
 					Elev_set_motor_direction(DIRN_STOP)
-					fmt.Println("FoundFloorDOWN")
+					
 					break
 				}
 			}

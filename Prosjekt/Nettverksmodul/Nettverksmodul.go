@@ -90,7 +90,7 @@ func TCP_sender(message chan string, recievedmessage chan string) {
 
 	var numberofIPs int = 0
 	var addressArray [Numberofelevators]string
-	buf := make([]byte, 1024)
+	buf := make([]byte, 128)
 	var State int = 0
 
 	ListenPort, err := net.ResolveUDPAddr("udp", ":20021") // initialize connections
@@ -250,26 +250,3 @@ func TCP_listener(recievedmessage chan string) {
 
 }
 
-func Test(message chan string) {
-
-	for {
-		message <- string("Hello")
-		time.Sleep(time.Second * 1)
-	}
-}
-
-/*
-func main() {
-
-	message := make(chan string, 1024)
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
-	go Broadcast()
-	go TCP_sender(message)
-	go TCP_listener()
-	go Test(message)
-
-	deadChan := make(chan bool, 1)
-	<-deadChan
-}
-*/

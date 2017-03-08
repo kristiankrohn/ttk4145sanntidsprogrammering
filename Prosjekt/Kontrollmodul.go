@@ -137,7 +137,7 @@ func Local_orders(internal_button chan int, nextFloor chan int, orderFinished ch
 					if numberofOrders == 1 {
 						nextFloor <- orderArray[0].floor
 						fmt.Println("Next floor is: ", orderArray[0].floor)
-					} /*else if numberofOrders > 1 {
+					} /*else if numberofOrders > 1 { // tried out some array sorting
 					/* 	direction up = 0
 					*	direction down = 1
 					*	direction internal = 2
@@ -378,7 +378,7 @@ func Assess_cost(nextFloor chan int) {
 			now := time.Now()
 			//fmt.Println("checking for ordertimeouts: ", i)
 			if (now.Sub(numberofCosts[i].starttime) > 500000000) && (numberofCosts[i].number > 0) { // check for timeout, if timeout, assess costarray
-				min := Costentry{9000, myIP}
+				min := Costentry{9000, cost_array[i][0].IP}
 				fmt.Println("Order auction ended, assessing cost")
 				for j := 0; j < numberofCosts[i].number; j++ {
 
@@ -483,7 +483,7 @@ func Resend_externalorders(message chan string) {
 			for i := 0; i < ext_numberofOrders; i++ {
 				//if external order has timed out, issue a new auction
 				if now.Sub(ext_orderArray[i].starttime) > 20000000000 {
-					fmt.Println("Order times out, sending new order to: ", ext_orderArray[i])
+					fmt.Println("Order times out, sending new order to: ", ext_orderArray[i].floor)
 					message <- strings.Join([]string{strconv.FormatInt(int64(0), 10), strconv.FormatInt(int64(ext_orderArray[i].floor), 10), strconv.FormatInt(int64(ext_orderArray[i].button), 10)}, ",")
 					ext_orderArray[i].starttime = time.Now()
 				}

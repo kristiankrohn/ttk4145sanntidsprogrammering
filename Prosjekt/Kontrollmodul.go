@@ -79,7 +79,8 @@ func Calculate_cost(floor int, calldirection int) int{
 	//det enkleste er å se på det totale antall ordre og etasjer den skal kjøre
 	//del resultat på nettverk
 	var cost int
-	var direction int = 1000
+	var direction int = 10
+
 	if numberofOrders == 0{
 		if floor > CurrentFloor{
 			cost = floor - CurrentFloor
@@ -93,14 +94,15 @@ func Calculate_cost(floor int, calldirection int) int{
 			} else {
 				direction = 2
 			}
+			cost = direction * (floor - CurrentFloor)
 		} else {
 			if orderArray[0][0] > CurrentFloor{
 				direction = 2
 			} else {
 				direction = 1
 			}
+			cost = direction * (CurrentFloor - floor)
 		}
-		cost = direction * (floor - CurrentFloor)
 	}
 	return cost
 }

@@ -1,17 +1,12 @@
 package main
 
 import (
-	. "./Kontrollmodul/Heismodul"
-	//. "./Kontrollmodul/Heismodul/driver"
-	. "./Kontrollmodul/Nettverksmodul"
-	. "./Kontrollmodul"
+	. "./Controlmodule/Elevatormodule"
+	. "./Controlmodule/Networkmodule"
+	. "./Controlmodule"
 	"fmt"
 	"runtime"
-	//"strconv"
-	//"strings"
 	"time"
-	//"os"
-	//"encoding/gob"
 	"net"
 	"os/exec"
 	"encoding/binary"

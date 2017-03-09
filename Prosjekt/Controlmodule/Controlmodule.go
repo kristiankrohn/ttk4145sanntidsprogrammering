@@ -1,19 +1,15 @@
-package Kontrollmodul
+package Controlmodule
 
 import (
-	. "./Heismodul"
-	. "./Heismodul/driver"
-	. "./Nettverksmodul"
+	. "./Elevatormodule"
+	. "./Elevatormodule/driver"
+	. "./Networkmodule"
 	"fmt"
-	//"runtime"
 	"strconv"
 	"strings"
 	"time"
 	"os"
 	"encoding/gob"
-	//"net"
-	//"os/exec"
-	//"encoding/binary"
 )
 
 //const _FLOORS int = 4 Define this in Heismodul.go
@@ -450,7 +446,7 @@ func Assess_cost(nextFloor chan int) {
 
 				}
 				
-				if myIP == min.IP {
+				if (myIP == min.IP) || (numberofCosts[i].number == 1) {
 
 					fmt.Println("I have lowest cost or cost&IP and taking order, the number in que is", numberofOrders)
 

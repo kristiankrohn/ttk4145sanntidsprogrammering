@@ -1,9 +1,8 @@
-package Heismodul
+package Elevatormodule
 
 import (
 	. "./driver"
 	"fmt"
-	//"os"
 	"time"
 )
 

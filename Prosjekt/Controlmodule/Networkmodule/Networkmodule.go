@@ -1,13 +1,10 @@
-package Nettverksmodul
+package Networkmodule
 
 import (
 	"fmt"
 	"net"
-	//"os"
-	//"runtime"
 	"strings"
 	"time"
-	//"bytes"
 	"strconv"
 )
 

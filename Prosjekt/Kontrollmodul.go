@@ -115,11 +115,15 @@ func Local_orders(internal_button chan int, nextFloor chan int, orderFinished ch
 	var orderMatch bool = false
 
 	for {
+
 		select {
 		case internal_call := <-internal_button:
 			{
+				//fmt.Println("Local_orders is alive and reading from channel!")
+				orderMatch = false
 				newOrder := int(internal_call)
 				for j := 0; j <= numberofOrders; j++ {
+					//fmt.Println("From loop")
 					if (orderArray[j].floor == newOrder) && (orderArray[j].button == 2) {
 						orderMatch = true
 						fmt.Println("Order already exist")
@@ -132,11 +136,12 @@ func Local_orders(internal_button chan int, nextFloor chan int, orderFinished ch
 					orderArray[numberofOrders] = Orderentry{newOrder, 2}
 					//orderArray[1][numberofOrders] = 2
 					fmt.Println("New order at floor: ", newOrder)
+
 					Elev_set_button_lamp(BUTTON_COMMAND, orderArray[numberofOrders].floor, 1)
 					numberofOrders++
 					if numberofOrders == 1 {
 						nextFloor <- orderArray[0].floor
-						fmt.Println("Next floor is: ", orderArray[0].floor)
+						//fmt.Println("Next floor is: ", orderArray[0].floor)
 					} /*else if numberofOrders > 1 { // tried out some array sorting
 					/* 	direction up = 0
 					*	direction down = 1
@@ -159,6 +164,8 @@ func Local_orders(internal_button chan int, nextFloor chan int, orderFinished ch
 						nextFloor <- orderArray[0].floor
 					}*/
 				}
+				//fmt.Println("Orderhandling finished")
+				fmt.Println(orderArray)
 			}
 
 		default:
@@ -319,15 +326,18 @@ func Incomming_message(recievedmessage chan string, message chan string) {
 					lastaddressbyte_i64, err := strconv.ParseInt(lastaddressbytestring[3], 10, 64)
 					CheckError(err)
 					lastaddressbyte := int(lastaddressbyte_i64)
-					fmt.Println("Adding cost to array", cost, button, numberofCosts[button].number) //Cost_array = arraysize * numberofelevators
+					if numberofCosts[button].number <= Numberofelevators {
+						fmt.Println("Adding cost to array", cost, button, numberofCosts[button].number) //Cost_array = arraysize * numberofelevators
 
-					// Adding cost to costarray and starting timer if it is first cost added
-					cost_array[button][numberofCosts[button].number] = Costentry{cost, lastaddressbyte}
-					if numberofCosts[button].number == 0 {
-						numberofCosts[button].starttime = time.Now()
+						// Adding cost to costarray and starting timer if it is first cost added
+						cost_array[button][numberofCosts[button].number] = Costentry{cost, lastaddressbyte}
+						if numberofCosts[button].number == 0 {
+							numberofCosts[button].starttime = time.Now()
+						}
+						numberofCosts[button].number++
+					} else {
+						fmt.Println("Cost_array is full")
 					}
-					numberofCosts[button].number++
-
 				} else if messagecode == 2 { //Ext_order is completed and removed from ext_array
 					floor_i64, err := strconv.ParseInt(slice[1], 10, 64)
 					CheckError(err)
@@ -468,6 +478,7 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 					}
 					numberofOrders--
 					fmt.Println("Number of orders: ", numberofOrders)
+					//fmt.Println(orderArray)
 					if numberofOrders >= 1 {
 						nextFloor <- orderArray[0].floor
 						fmt.Println("Next floor is: ", orderArray[0].floor)
@@ -503,13 +514,13 @@ func Backup_localorders() {
 
 func main() {
 
-	nextFloor := make(chan int, 100)
+	nextFloor := make(chan int, 20)
 	orderFinished := make(chan bool, 5)
-	up_button := make(chan int, 100)
-	down_button := make(chan int, 100)
-	internal_button := make(chan int, 100)
-	message := make(chan string, 200)
-	recievedmessage := make(chan string, 200)
+	up_button := make(chan int, 4)
+	down_button := make(chan int, 4)
+	internal_button := make(chan int, 4)
+	message := make(chan string, 20)
+	recievedmessage := make(chan string, 40)
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 

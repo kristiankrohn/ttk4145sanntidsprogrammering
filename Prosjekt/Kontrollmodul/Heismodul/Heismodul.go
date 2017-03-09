@@ -131,20 +131,17 @@ func Handle_buttons(up_button chan int, down_button chan int, internal_button ch
 					buttonRelease[DIR][FLOOR] = 1
 					fmt.Println("New buttonpress at: ", FLOOR)
 					if DIR == 0 {
-						select {
-						case up_button <- FLOOR:
-						default:
-						}
+						
+						up_button <- FLOOR
+					
 					} else if DIR == 1 {
-						select {
-						case down_button <- FLOOR:
-						default:
-						}
+						
+						down_button <- FLOOR
+						
 					} else {
-						select {
-						case internal_button <- FLOOR:
-						default:
-						}
+						
+						internal_button <- FLOOR
+						
 					}
 
 				} else if (buttonPress[DIR][FLOOR] == 0) && (buttonRelease[DIR][FLOOR] == 1) {

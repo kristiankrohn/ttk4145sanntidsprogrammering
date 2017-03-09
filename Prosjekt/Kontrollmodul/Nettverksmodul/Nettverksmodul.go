@@ -65,7 +65,7 @@ func Last_byte_of_my_IP() int { //Borrowed from https://github.com/TTK4145/Netwo
 func Broadcast(message chan string, recievedmessage chan string) {
 	// rewrite to statemachine to handle reconnects
 	for {
-		BroadcastAddr, err := net.ResolveUDPAddr("udp", "129.241.187.255:24621")
+		BroadcastAddr, err := net.ResolveUDPAddr("udp", "129.241.187.255:20021")
 		if err != nil {
 			fmt.Println("Warning: ", err)
 		}
@@ -95,7 +95,7 @@ func TCP_sender(message chan string, recievedmessage chan string) {
 	buf := make([]byte, 128)
 	var State int = 0
 
-	ListenPort, err := net.ResolveUDPAddr("udp", ":24621") // initialize connections
+	ListenPort, err := net.ResolveUDPAddr("udp", ":20021") // initialize connections
 	if err != nil {
 		fmt.Println("Error: ", err)
 		State = 0
@@ -124,7 +124,7 @@ func TCP_sender(message chan string, recievedmessage chan string) {
 			default:
 			}
 
-			RetryListenPort, err := net.ResolveUDPAddr("udp", ":24621")
+			RetryListenPort, err := net.ResolveUDPAddr("udp", ":20021")
 			if err != nil {
 				fmt.Println("Error: ", err)
 				State = 0
@@ -182,7 +182,7 @@ func TCP_sender(message chan string, recievedmessage chan string) {
 				case sendmessage := <-message:
 					{
 						for i := 0; i <= numberofIPs; i++ {
-							Clientaddress, err := net.ResolveTCPAddr("tcp", string(addressArray[i]+":24621"))
+							Clientaddress, err := net.ResolveTCPAddr("tcp", string(addressArray[i]+":20021"))
 							if err != nil {
 								fmt.Println("Disconnect :", addressArray[i])
 								for j := 0; j <= (numberofIPs - i); j++ {
@@ -216,7 +216,7 @@ func TCP_sender(message chan string, recievedmessage chan string) {
 }
 
 func TCP_listener(recievedmessage chan string) {
-	listenPort, err := net.Listen("tcp", ":24621")
+	listenPort, err := net.Listen("tcp", ":20021")
 	if err != nil {
 		fmt.Println("Error: ", err)
 	}
@@ -226,7 +226,7 @@ func TCP_listener(recievedmessage chan string) {
 		if err != nil {
 			fmt.Println("Error: ", err)
 			time.Sleep(time.Second * 1)
-			RetrylistenPort, err := net.Listen("tcp", ":24621")
+			RetrylistenPort, err := net.Listen("tcp", ":20021")
 			if err != nil {
 				fmt.Println("Error: ", err)
 			} else {

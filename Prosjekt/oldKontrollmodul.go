@@ -1,9 +1,9 @@
-package main
+package Kontrollmodul
 
 import (
-	. "./Heismodul"
-	. "./Heismodul/driver"
-	. "./Nettverksmodul"
+	//. "./Heismodul"
+	//. "./Heismodul/driver"
+	//. "./Nettverksmodul"
 	"fmt"
 	"runtime"
 	"strconv"
@@ -11,6 +11,9 @@ import (
 	"time"
 	"os"
 	"encoding/gob"
+	"net"
+	"os/exec"
+	"encoding/binary"
 )
 
 //const _FLOORS int = 4 Define this in Heismodul.go
@@ -74,7 +77,7 @@ func Init_system(nextFloor chan int) {
  		}
 
  		dataFile.Close()
- 		fmt.Println("Opened this array from file: ", orderArray)
+ 		//fmt.Println("Opened this array from file: ", orderArray)
  		Button := BUTTON_CALL_UP
  		for i := 0; (orderArray[i].Floor > -1) || (i == (arraysize - 1)); i++{
  			numberofOrders = i + 1
@@ -208,7 +211,7 @@ func Local_orders(internal_button chan int, nextFloor chan int, orderFinished ch
 					}*/
 				}
 				//fmt.Println("Orderhandling finished")
-				fmt.Println(orderArray)
+				//fmt.Println(orderArray)
 			}
 
 		default:
@@ -262,10 +265,7 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 					message <- strings.Join([]string{strconv.FormatInt(int64(0), 10), strconv.FormatInt(int64(newOrder), 10), strconv.FormatInt(int64(DIR), 10)}, ",")
 				}
 			}
-		default:
-		}
 
-		select {
 		case call_down := <-down_button:
 			{
 				orderMatch = false
@@ -285,7 +285,6 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 					message <- strings.Join([]string{strconv.FormatInt(int64(0), 10), strconv.FormatInt(int64(newOrder), 10), strconv.FormatInt(int64(DIR), 10)}, ",")
 				}
 			}
-		default:
 		}
 	}
 }
@@ -450,7 +449,7 @@ func Assess_cost(nextFloor chan int) {
 					}
 
 				}
-				numberofCosts[i].number = 0
+				
 				if myIP == min.IP {
 
 					fmt.Println("I have lowest cost or cost&IP and taking order, the number in que is", numberofOrders)
@@ -475,6 +474,7 @@ func Assess_cost(nextFloor chan int) {
 				} else {
 					fmt.Println("I did not have lowest cost and did not take the order")
 				}
+				numberofCosts[i].number = 0
 			}
 		}
 		time.Sleep(time.Second * 1)
@@ -526,7 +526,7 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 					fmt.Println("Number of orders: ", numberofOrders)
 					//fmt.Println(orderArray)
 
-					//Backup_localorders()
+					Backup_localorders()
 
 					if numberofOrders >= 1 {
 						nextFloor <- orderArray[0].Floor
@@ -577,36 +577,3 @@ func Backup_localorders() {
  	}
 }
 
-func main() {
-
-	nextFloor := make(chan int, 20)
-	orderFinished := make(chan bool, 5)
-	up_button := make(chan int, 4)
-	down_button := make(chan int, 4)
-	internal_button := make(chan int, 4)
-	message := make(chan string, 20)
-	recievedmessage := make(chan string, 40)
-
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
-	Init_system(nextFloor)
-	fmt.Println("Init finished")
-
-	go Broadcast(message, recievedmessage)
-	go Elevator_driver(nextFloor, orderFinished)
-	go TCP_sender(message, recievedmessage)
-	go Local_orders(internal_button, nextFloor, orderFinished)
-	go Handle_buttons(up_button, down_button, internal_button)
-	go External_orders(message, up_button, down_button, nextFloor)
-	go Displayfloor()
-	go TCP_listener(recievedmessage)
-	go Incomming_message(recievedmessage, message)
-	go Assess_cost(nextFloor)
-	go Clear_orders(orderFinished, nextFloor, message)
-	go Resend_externalorders(message)
-
-
-
-	deadChan := make(chan bool, 1)
-	<-deadChan
-}

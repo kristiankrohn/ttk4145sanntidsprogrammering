@@ -83,7 +83,7 @@ func main() {
 	go Handle_buttons(up_button, down_button, internal_button)
 	go External_orders(message, up_button, down_button, nextFloor)	
 	go TCP_listener(recievedmessage)
-	go Incomming_message(recievedmessage, message)
+	go Message_handler(recievedmessage, message)
 	go Assess_cost(nextFloor)
 	go Clear_orders(orderFinished, nextFloor, message, stopElevator)
 	go Resend_externalorders(message)

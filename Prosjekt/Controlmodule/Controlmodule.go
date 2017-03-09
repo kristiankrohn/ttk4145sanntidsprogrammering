@@ -236,10 +236,8 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 	}
 }
 
-func Incomming_message(recievedmessage chan string, message chan string) {
-
-	//sorry for using strings :(
-	//its a complete mess, but it works
+func Message_handler(recievedmessage chan string, message chan string) {
+	//Sort incomiing messages based on messagecode and send out proper response
 
 	for {
 		select {

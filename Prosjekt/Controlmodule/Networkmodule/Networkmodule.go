@@ -8,37 +8,17 @@ import (
 	"strconv"
 )
 
-/* 			 Forslag til meldingsoppbygging
-	//	eksempel:
-	//	new order at floor 3		:		message(0,3,0,ipAddr)
-	//	cost				:		message(1,0,24,ipAddr)
-	//	completeOrder at floor 3	:		message(2,3,0,ipAddr)
-
-type message struct {
-	messageType 	int
-	floor		int
-	cost		int
-	ipAddr		int
-}
-
-const (
-	newOrder	int = iota
-	cost
-	completeOrder
-)
-
-*/
+//messages on the network is sent as strings
 
 const Numberofelevators int = 10
 
 func CheckError(err error) {
 	if err != nil {
 		fmt.Println("Error: ", err)
-		//os.Exit(0)
 	}
 }
 
-func Last_byte_of_my_IP() int { //Borrowed from https://github.com/TTK4145/Network-go/blob/master/network/localip/localip.go
+func Last_byte_of_my_IP() int { //was borrowed from https://github.com/TTK4145/Network-go/blob/master/network/localip/localip.go, but rewritten to the unreconizeable
 	var localIP string
 	connAddr, err := net.ResolveUDPAddr("udp", "8.8.8.8:53")
 	if err != nil {
@@ -60,7 +40,7 @@ func Last_byte_of_my_IP() int { //Borrowed from https://github.com/TTK4145/Netwo
 }
 
 func Broadcast(message chan string, recievedmessage chan string) {
-	// rewrite to statemachine to handle reconnects
+	//Expose ourselves to other elevators, if network is not working loopback messages to ourselves
 	for {
 		BroadcastAddr, err := net.ResolveUDPAddr("udp", "129.241.187.255:20021")
 		if err != nil {
@@ -71,7 +51,7 @@ func Broadcast(message chan string, recievedmessage chan string) {
 			fmt.Println("Warning: ", err)
 			select {
 			case buffermessage := <-message:
-				{ // message loopback, remove when TCP sender throws an no connection erre
+				{ // message loopback, remove when TCP_sender throws an no connection erre
 					recievedmessage <- strings.Join([]string{buffermessage, "0.0.0.255:9000"}, ",")
 				}
 			default:
@@ -86,7 +66,7 @@ func Broadcast(message chan string, recievedmessage chan string) {
 }
 
 func TCP_sender(message chan string, recievedmessage chan string) {
-
+	//Discover other elevators and put in elevatorarray, when message is recieved - send to all elevators
 	var numberofIPs int = 0
 	var addressArray [Numberofelevators]string
 	buf := make([]byte, 128)
@@ -96,18 +76,15 @@ func TCP_sender(message chan string, recievedmessage chan string) {
 	if err != nil {
 		fmt.Println("Error: ", err)
 		State = 0
-		//time.Sleep(time.Second * 1)
-		fmt.Println("First error")
+		fmt.Println("First TCP error")
 	}
 	Listen, err := net.ListenUDP("udp", ListenPort)
 	if err != nil {
 		fmt.Println("Error: ", err)
 		State = 0
-		//time.Sleep(time.Second * 1)
-		fmt.Println("Second error")
+		fmt.Println("Second TCP error")
 	} else {
 		State = 1
-		//fmt.Println("State = 1")
 	}
 
 	for {
@@ -115,7 +92,7 @@ func TCP_sender(message chan string, recievedmessage chan string) {
 			fmt.Println("Looking for connections")
 			select {
 			case buffermessage := <-message:
-				{ // message loopback, remove when TCP sender throws an no connection erre
+				{ // message loopback, program has never made it here during testing, but preferably message loopback would have happened here(not that it functionally matters)
 					recievedmessage <- strings.Join([]string{buffermessage, "0.0.0.255:9000"}, ",")
 				}
 			default:
@@ -140,20 +117,16 @@ func TCP_sender(message chan string, recievedmessage chan string) {
 			}
 
 		} else if State == 1 {
-			//fmt.Println("Network working")
+			//Discover new elevators
 
 			n, addr, err := Listen.ReadFromUDP(buf)
 
 			if err != nil {
 				fmt.Println("Error: ", err)
-				//Listen.Close()
-				//net.ListenUDP("udp", ListenPort)
 				State = 0
 				fmt.Println("Return to looking for connections")
-				//fmt.Println("Connection closed")
 
 			} else {
-				//fmt.Println("Recieving messages")
 				firsthalf := strings.Split(addr.String(), ":")
 				NewIP := firsthalf[0]
 				var IPmatch bool = false
@@ -175,7 +148,7 @@ func TCP_sender(message chan string, recievedmessage chan string) {
 					}
 				}
 
-				select {
+				select { //message sending happens here
 				case sendmessage := <-message:
 					{
 						for i := 0; i <= numberofIPs; i++ {
@@ -213,6 +186,7 @@ func TCP_sender(message chan string, recievedmessage chan string) {
 }
 
 func TCP_listener(recievedmessage chan string) {
+	//Recieves messages and put on channel
 	listenPort, err := net.Listen("tcp", ":20021")
 	if err != nil {
 		fmt.Println("Error: ", err)
@@ -235,6 +209,7 @@ func TCP_listener(recievedmessage chan string) {
 		firsthalf := strings.Split(addr.String(), ":")
 		IP := firsthalf[0]
 
+		//We do not want messages from 127.0.0.1!
 		if IP != "127.0.0.1" {
 			buf := make([]byte, 1024)
 			n, err := connection.Read(buf)
@@ -244,11 +219,9 @@ func TCP_listener(recievedmessage chan string) {
 
 			address := connection.RemoteAddr().String()
 			recievedmessage <- strings.Join([]string{string(buf[0:n]), address}, ",")
-			//fmt.Println("Recieved message : ", string(buf[0:n]), " from ", address)
 			connection.Close()
 		} else {
 			connection.Close()
 		}
 	}
-
 }

@@ -8,7 +8,7 @@ import (
 
 const N_FLOORS int = 4
 
-var CurrentFloor int = 0
+var CurrentFloor int
 
 func Displayfloor() {
 	var oldFloor int = -1
@@ -20,10 +20,8 @@ func Displayfloor() {
 			newFloor = floor
 			if newFloor != oldFloor {
 				oldFloor = newFloor
-				//fmt.Println(newFloor + 1)
 				Elev_set_floor_indicator(newFloor)
 				CurrentFloor = newFloor
-
 			}
 		}
 	}
@@ -76,33 +74,13 @@ func Init_elevator() {
 			if 2000000000 <= currentTime.Sub(startTime) {
 				fmt.Println("FAILURE, move elevator away from endstops!")
 				time.Sleep(time.Second * 1)
-				//os.Exit(1)
 			}
 		}
 	}
 	Elev_set_motor_direction(DIRN_STOP)
-
-	//return int(oldFloor)
 }
 
-/*
-func Current_floor(current_floor chan int) {
-	var floor int
-	var newFloor int
-	var oldFloor int
-	for {
-		floor = Elev_get_floor_sensor_signal()
-		if floor >= 0 {
-			newFloor = floor
-			if newFloor != oldFloor {
-				oldFloor = newFloor
-				current_floor = newFloor:
-				fmt.Println("Current floor is: ", newFloor)
-			}
-		}
-	}
-}
-*/
+
 func Handle_buttons(up_button chan int, down_button chan int, internal_button chan int) {
 
 	var buttonPress [3][N_FLOORS]int
@@ -124,11 +102,11 @@ func Handle_buttons(up_button chan int, down_button chan int, internal_button ch
 				Button = BUTTON_COMMAND
 			}
 
-			for FLOOR := 0; FLOOR < N_FLOORS; FLOOR++ { // read buttonpress and add order to que
+			for FLOOR := 0; FLOOR < N_FLOORS; FLOOR++ { // read buttonpress and put on channel
 				buttonPress[DIR][FLOOR] = Elev_get_button_signal(Button, FLOOR) //UP == 0, DOWN == 1
 				if (buttonPress[DIR][FLOOR] == 1) && (buttonRelease[DIR][FLOOR] == 0) {
 					buttonRelease[DIR][FLOOR] = 1
-					fmt.Println("New buttonpress at: ", FLOOR)
+					//fmt.Println("New buttonpress at: ", FLOOR)
 					if DIR == 0 {
 						
 						up_button <- FLOOR
@@ -144,7 +122,7 @@ func Handle_buttons(up_button chan int, down_button chan int, internal_button ch
 					}
 
 				} else if (buttonPress[DIR][FLOOR] == 0) && (buttonRelease[DIR][FLOOR] == 1) {
-					//fmt.Println("New buttonrelease at: ", i)
+
 					buttonRelease[DIR][FLOOR] = 0
 				}
 			}
@@ -152,17 +130,17 @@ func Handle_buttons(up_button chan int, down_button chan int, internal_button ch
 	}
 }
 
-func Elevator_driver(nextFloor chan int, orderFinished chan bool) {
-
+func Elevator_driver(nextFloor chan int, orderFinished chan bool, stopElevator chan bool) {
+	//this is the module acually controlling the elevator
 	var State int = 0
 	var Finished = false
-	//var startTime time.Time
 	var nextFloor_i int = -1
+	var stopElevator_i bool = false
 
 	for {
 
 		select {
-		case nextFloor_ci := <-nextFloor:
+		case nextFloor_ci := <-nextFloor:{
 			nextFloor_i = int(nextFloor_ci)
 			Finished = false
 			fmt.Println("Going for next floor", nextFloor_i)
@@ -175,67 +153,65 @@ func Elevator_driver(nextFloor chan int, orderFinished chan bool) {
 				fmt.Println("DOWN")
 			} else {
 				Elev_set_motor_direction(DIRN_STOP)
-				fmt.Println("STOP")
+				fmt.Println("STOP, next floor is: ", nextFloor_i)
 			}
-
-			for Finished == false {
-
-				if State == 0 {
-
-					if CurrentFloor == nextFloor_i {
-						Elev_set_motor_direction(DIRN_STOP)
-						State = 1
-						//fmt.Println("State 1")
-					}
-
-				} else if State == 1 {
-					Elev_set_door_open_lamp(1)
-					orderFinished <- true
-					time.Sleep(time.Second * 1)
-					Elev_set_door_open_lamp(0)
-					fmt.Println("Ready for new floor")
-					State = 0
-					Finished = true
-				} else {
-					//Elev_set_motor_direction(DIRN_STOP)
-				}
-			}
-		default:
-			//Elev_set_motor_direction(DIRN_STOP)
 		}
-		/*
-			if State == 0 {
+		case stopElevator_ci := <- stopElevator:{
+			stopElevator_i = bool(stopElevator_ci)
+			stopElevator_i = stopElevator_i
+			fmt.Println("Stopping elevator on the fly")
+			
+			for stopElevator_i == true{
+				Elev_set_motor_direction(DIRN_STOP)
+				Elev_set_door_open_lamp(1)
+				//fmt.Println("Door open")
+				time.Sleep(time.Second * 2)
+				Elev_set_door_open_lamp(0)
+				//fmt.Println("Door closed")
+				fmt.Println("Contiuing")
+				stopElevator_i = false
+			}
+			if stopElevator_i == false{
 				if (CurrentFloor < nextFloor_i) && (nextFloor_i <= 3) {
 					Elev_set_motor_direction(DIRN_UP)
-					//fmt.Println("UP")
+					fmt.Println("UP")
 				} else if (CurrentFloor > nextFloor_i) && (nextFloor_i >= 0) {
 					Elev_set_motor_direction(DIRN_DOWN)
-					//fmt.Println("DOWN")
+					fmt.Println("DOWN")
 				} else {
 					Elev_set_motor_direction(DIRN_STOP)
-					//fmt.Println("STOP")
+					fmt.Println("STOP, next floor is: ", nextFloor_i)
 				}
+			}
+		}
+		
+		default:
 
-				if (CurrentFloor == nextFloor_i) && (Finished == false) {
-					Elev_set_motor_direction(DIRN_STOP)
-					State = 1
-					//Finished = true
-					startTime = time.Now()
+		}
 
-					fmt.Println("Orderfinished = true")
-				}
+		if State == 0 {
 
-			} else if State == 1 {
-				Elev_set_door_open_lamp(1)
-				currentTime := time.Now()
-				if currentTime.Sub(startTime) >= 1000000000 {
-					Elev_set_door_open_lamp(0)
-					orderFinished <- true
-					fmt.Println("Ready for new floor")
-					State = 0
-					Finished = true
-				}
-			}*/
+			if (CurrentFloor == nextFloor_i) && (Finished == false) {
+					
+				Elev_set_motor_direction(DIRN_STOP)
+				State = 1
+			}						
+		} else if State == 1 {
+			Elev_set_door_open_lamp(1)
+			fmt.Println("Door open")			
+			State = 2
 
+		} else if State == 2{
+			time.Sleep(time.Second * 2)
+			State = 3
+
+		} else if State == 3{
+			orderFinished <- true
+			Elev_set_door_open_lamp(0)
+			fmt.Println("Door closed")
+			fmt.Println("Ready for new floor")
+			State = 0
+			Finished = true
+		}
 	}
 }

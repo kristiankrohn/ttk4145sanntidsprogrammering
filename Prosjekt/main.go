@@ -23,7 +23,7 @@ func Watchdog()(uint64){
 	fmt.Println("Connection established")
 	fmt.Println("A new elevatorcontoller has been born")
 	for {
-		Listener.SetReadDeadline(time.Now().Add(time.Second*2))
+		Listener.SetReadDeadline(time.Now().Add(time.Second*4))
 		n, _, err := Listener.ReadFromUDP(buffer)
 
 		if err != nil{
@@ -57,38 +57,37 @@ func IsAlive(counter uint64){
 }
 
 func main() {
+	nextFloor := make(chan int, 20)
+	go Displayfloor()
 
 	var counter uint64 = Watchdog()
-	
+	go IsAlive(counter)
 
-	nextFloor := make(chan int, 20)
+	Init_system(nextFloor)
+	
 	orderFinished := make(chan bool, 5)
 	up_button := make(chan int, 4)
 	down_button := make(chan int, 4)
 	internal_button := make(chan int, 4)
 	message := make(chan string, 20)
 	recievedmessage := make(chan string, 40)
-
+	stopElevator := make(chan bool, 5)
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	go IsAlive(counter)
-	Init_system(nextFloor)
+	
 	fmt.Println("Init finished")
 
 	go Broadcast(message, recievedmessage)
-	go Elevator_driver(nextFloor, orderFinished)
+	go Elevator_driver(nextFloor, orderFinished, stopElevator)
 	go TCP_sender(message, recievedmessage)
 	go Local_orders(internal_button, nextFloor, orderFinished)
 	go Handle_buttons(up_button, down_button, internal_button)
-	go External_orders(message, up_button, down_button, nextFloor)
-	go Displayfloor()
+	go External_orders(message, up_button, down_button, nextFloor)	
 	go TCP_listener(recievedmessage)
 	go Incomming_message(recievedmessage, message)
 	go Assess_cost(nextFloor)
-	go Clear_orders(orderFinished, nextFloor, message)
+	go Clear_orders(orderFinished, nextFloor, message, stopElevator)
 	go Resend_externalorders(message)
 
-	
-	
 
 	deadChan := make(chan bool, 1)
 	<-deadChan

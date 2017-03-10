@@ -3,9 +3,9 @@ package Networkmodule
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
 )
 
 //messages on the network is sent as strings
@@ -182,6 +182,8 @@ func TCP_sender(message chan string, recievedmessage chan string) {
 				}
 			}
 		}
+		time.Sleep(time.Millisecond * 10)
+
 	}
 }
 
@@ -223,5 +225,7 @@ func TCP_listener(recievedmessage chan string) {
 		} else {
 			connection.Close()
 		}
+		time.Sleep(time.Millisecond * 10)
+
 	}
 }

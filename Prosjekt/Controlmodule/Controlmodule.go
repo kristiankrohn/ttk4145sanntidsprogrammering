@@ -395,7 +395,7 @@ func Assess_cost(nextFloor chan int) {
 			if (now.Sub(numberofCosts[i].starttime) > 1000000000) && (numberofCosts[i].number > 0) { // check for timeout, if timeout, assess costarray
 				min := cost_array[i][0]
 				fmt.Println("Order auction ended, assessing cost")
-				for j := 0; j <= numberofCosts[i].number; j++ {
+				for j := 0; j < numberofCosts[i].number; j++ {
 
 					//Sjekker hvilket bidrag som har lavest kost
 					if cost_array[i][j].cost < min.cost {
@@ -523,15 +523,21 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 
 									fmt.Println("Current floor:", CurrentFloor)
 
+									for j := 0; j < ext_numberofOrders; j++ {
+										if (ext_orderArray[j].Floor == orderArray[i].Floor) && (ext_orderArray[j].Button == orderArray[i].Button) {
+											message <- strings.Join([]string{strconv.FormatInt(int64(2), 10), strconv.FormatInt(int64(ext_orderArray[j].Floor), 10),
+												strconv.FormatInt(int64(ext_orderArray[j].Button), 10)}, ",")
+											break
+										}
+									}
+
 									Button := BUTTON_COMMAND
 									if orderArray[i].Button == 0 {
 										Button = BUTTON_CALL_UP
-										message <- strings.Join([]string{strconv.FormatInt(int64(2), 10), strconv.FormatInt(int64(ext_orderArray[i].Floor), 10),
-											strconv.FormatInt(int64(ext_orderArray[i].Button), 10)}, ",")
+										
 									} else if orderArray[i].Button == 1 {
 										Button = BUTTON_CALL_DOWN
-										message <- strings.Join([]string{strconv.FormatInt(int64(2), 10), strconv.FormatInt(int64(ext_orderArray[i].Floor), 10),
-											strconv.FormatInt(int64(ext_orderArray[i].Button), 10)}, ",")
+	
 									} else {
 										Button = BUTTON_COMMAND
 									}
@@ -553,7 +559,6 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 			}
 		}
 		time.Sleep(time.Millisecond * 10)
-
 	}
 }
 

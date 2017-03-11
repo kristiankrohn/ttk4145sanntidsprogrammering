@@ -402,15 +402,17 @@ func Assess_cost(nextFloor chan int) {
 						min = cost_array[i][j]
 						//Dersom kosten er den samme som vår kost, men vår IP er lavere, så tar vi oppdraget
 					} else if min.cost == cost_array[i][j].cost {
-						fmt.Println("myIP = ", myIP)
+						fmt.Println("cost_array[i][j].IP = ", cost_array[i][j].IP)
 						fmt.Println("min.IP = ", min.IP)
 						if cost_array[i][j].IP <= min.IP {
 							min = cost_array[i][j]
+							fmt.Println("We have a same cost, but lower IP, best choice so far is IP: ", min.IP)
 						} 
 					}
 
 				}
-
+				fmt.Println("Best choice is: ", min.IP)
+				fmt.Println("I am IP: ", myIP)
 				if (myIP == min.IP) || (numberofCosts[i].number == 1) {
 
 					fmt.Println("I have lowest cost or cost&IP and taking order, the number in que is", numberofOrders)

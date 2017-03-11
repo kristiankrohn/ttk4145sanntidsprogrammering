@@ -370,7 +370,7 @@ func Message_handler(recievedmessage chan string, message chan string) {
 					} else {
 						fmt.Println("Invalid clear message")
 						fmt.Println(newOrder)
-						os.Exit(0)
+						//os.Exit(0)
 					}
 					if ext_numberofOrders < 0 {
 						ext_numberofOrders = 0

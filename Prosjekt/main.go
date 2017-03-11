@@ -22,7 +22,19 @@ func Watchdog() uint64 {
 
 	fmt.Println("Connection established")
 	fmt.Println("A new elevatorcontoller has been born")
+
+	isAliveAddr, err := net.ResolveUDPAddr("udp", "127.0.0.255:22221")
+	CheckError(err)
+	isAlive, err := net.DialUDP("udp", nil, isAliveAddr)
+	CheckError(err)
+
+	
+
 	for {
+
+		binary.BigEndian.PutUint64(buffer, counter)
+		_, _ = isAlive.Write(buffer)
+
 		Listener.SetReadDeadline(time.Now().Add(time.Second * 1))
 		n, _, err := Listener.ReadFromUDP(buffer)
 		if err != nil {
@@ -34,8 +46,9 @@ func Watchdog() uint64 {
 
 	}
 	Listener.Close()
+	isAlive.Close()
 
-	command := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run main.go")
+	command := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run maincoon.go")
 	err = command.Run()
 	CheckError(err)
 	fmt.Println("I'm now in control")
@@ -49,11 +62,33 @@ func Watchcat(counter uint64) {
 	CheckError(err)
 	isAlive, err := net.DialUDP("udp", nil, isAliveAddr)
 	CheckError(err)
+
 	for {
 		buffer := make([]byte, 8)
 		binary.BigEndian.PutUint64(buffer, counter)
 		_, _ = isAlive.Write(buffer)
+		
 		time.Sleep(time.Millisecond * 333)
+	}
+}
+
+func IsDogAlive(){
+	ListenAddr, err := net.ResolveUDPAddr("udp", "127.0.0.255:22221")
+	CheckError(err)
+	Listener, err := net.ListenUDP("udp", ListenAddr)
+	CheckError(err)
+	buffer := make([]byte, 8)
+	for{
+		Listener.SetReadDeadline(time.Now().Add(time.Second * 2))
+		_, _, err := Listener.ReadFromUDP(buffer)
+		if err != nil {
+			command := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run maincoon.go")
+			err = command.Run()
+			CheckError(err)
+			fmt.Println("Watchdog has died")
+
+		}
+		time.Sleep(time.Millisecond * 10)
 	}
 }
 
@@ -63,7 +98,7 @@ func main() {
 
 	var counter uint64 = Watchdog()
 	go Watchcat(counter)
-
+	go IsDogAlive()
 	Init_system(nextFloor)
 
 	orderFinished := make(chan bool, 5)

@@ -28,7 +28,7 @@ func Watchdog() uint64 {
 	isAlive, err := net.DialUDP("udp", nil, isAliveAddr)
 	CheckError(err)
 
-	
+
 
 	for {
 
@@ -48,7 +48,7 @@ func Watchdog() uint64 {
 	Listener.Close()
 	isAlive.Close()
 
-	command := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run maincoon.go")
+	command := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run main.go")
 	err = command.Run()
 	CheckError(err)
 	fmt.Println("I'm now in control")
@@ -67,7 +67,7 @@ func Watchcat(counter uint64) {
 		buffer := make([]byte, 8)
 		binary.BigEndian.PutUint64(buffer, counter)
 		_, _ = isAlive.Write(buffer)
-		
+
 		time.Sleep(time.Millisecond * 333)
 	}
 }
@@ -82,7 +82,7 @@ func IsDogAlive(){
 		Listener.SetReadDeadline(time.Now().Add(time.Second * 2))
 		_, _, err := Listener.ReadFromUDP(buffer)
 		if err != nil {
-			command := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run maincoon.go")
+			command := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run main.go")
 			err = command.Run()
 			CheckError(err)
 			fmt.Println("Watchdog has died")
@@ -108,7 +108,7 @@ func main() {
 	message := make(chan string, 20)
 	recievedMessage := make(chan string, 40)
 	stopElevator := make(chan bool, 5)
-	
+
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	fmt.Println("Init finished")

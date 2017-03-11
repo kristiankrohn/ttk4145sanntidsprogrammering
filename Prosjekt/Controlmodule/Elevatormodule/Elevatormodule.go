@@ -10,7 +10,7 @@ const N_FLOORS int = 4
 
 var CurrentFloor int
 
-func Displayfloor() {
+func Display_floor() {
 	var oldFloor int = -1
 	var newFloor int
 	var floor int
@@ -82,7 +82,7 @@ func Init_elevator() {
 	Elev_set_motor_direction(DIRN_STOP)
 }
 
-func Handle_buttons(up_button chan int, down_button chan int, internal_button chan int) {
+func Handle_buttons(upButton chan int, downButton chan int, internalButton chan int) {
 
 	var buttonPress [3][N_FLOORS]int
 	var buttonRelease [3][N_FLOORS]int
@@ -92,42 +92,42 @@ func Handle_buttons(up_button chan int, down_button chan int, internal_button ch
 			buttonRelease[i][j] = 0
 		}
 	}
-	Button := BUTTON_CALL_UP
+	button := BUTTON_CALL_UP
 	for {
-		for DIR := 0; DIR <= 2; DIR++ {
-			if DIR == 0 {
-				Button = BUTTON_CALL_UP
-			} else if DIR == 1 {
-				Button = BUTTON_CALL_DOWN
+		for dir := 0; dir <= 2; dir++ {
+			if dir == 0 {
+				button = BUTTON_CALL_UP
+			} else if dir == 1 {
+				button = BUTTON_CALL_DOWN
 			} else {
-				Button = BUTTON_COMMAND
+				button = BUTTON_COMMAND
 			}
 
-			for FLOOR := 0; FLOOR < N_FLOORS; FLOOR++ { // read buttonpress and put on channel
-				buttonPress[DIR][FLOOR] = Elev_get_button_signal(Button, FLOOR) //UP == 0, DOWN == 1
-				if (buttonPress[DIR][FLOOR] == 1) && (buttonRelease[DIR][FLOOR] == 0) {
-					buttonRelease[DIR][FLOOR] = 1
-					//fmt.Println("New buttonpress at: ", FLOOR)
-					if DIR == 0 {
+			for floor := 0; floor < N_FLOORS; floor++ { // read buttonpress and put on channel
+				buttonPress[dir][floor] = Elev_get_button_signal(button, floor) //UP == 0, DOWN == 1
+				if (buttonPress[dir][floor] == 1) && (buttonRelease[dir][floor] == 0) {
+					buttonRelease[dir][floor] = 1
+				
+					if dir == 0 {
 
-						up_button <- FLOOR
+						upButton <- floor
 
-					} else if DIR == 1 {
+					} else if dir == 1 {
 
-						down_button <- FLOOR
+						downButton <- floor
 
 					} else {
-						if FLOOR != CurrentFloor {
-							internal_button <- FLOOR
+						if floor != CurrentFloor {
+							internalButton <- floor
 						} else if Elev_get_floor_sensor_signal() != -1 {
-							internal_button <- FLOOR
+							internalButton <- floor
 
 						}
 					}
 
-				} else if (buttonPress[DIR][FLOOR] == 0) && (buttonRelease[DIR][FLOOR] == 1) {
+				} else if (buttonPress[dir][floor] == 0) && (buttonRelease[dir][floor] == 1) {
 
-					buttonRelease[DIR][FLOOR] = 0
+					buttonRelease[dir][floor] = 0
 				}
 			}
 		}
@@ -150,17 +150,16 @@ func Elevator_driver(nextFloor chan int, orderFinished chan bool, stopElevator c
 			{
 				nextFloor_i = int(nextFloor_ci)
 				Finished = false
-				fmt.Println("Going for next floor", nextFloor_i)
 
 				if (CurrentFloor < nextFloor_i) && (nextFloor_i <= 3) {
 					Elev_set_motor_direction(DIRN_UP)
-					fmt.Println("UP")
+
 				} else if (CurrentFloor > nextFloor_i) && (nextFloor_i >= 0) {
 					Elev_set_motor_direction(DIRN_DOWN)
-					fmt.Println("DOWN")
+
 				} else {
 					Elev_set_motor_direction(DIRN_STOP)
-					fmt.Println("STOP, next floor is: ", nextFloor_i)
+
 				}
 			}
 		case stopElevator_ci := <-stopElevator:
@@ -172,56 +171,51 @@ func Elevator_driver(nextFloor chan int, orderFinished chan bool, stopElevator c
 				for stopElevator_i == true {
 					Elev_set_motor_direction(DIRN_STOP)
 					Elev_set_door_open_lamp(1)
-					//fmt.Println("Door open")
+		
 					time.Sleep(time.Second * 2)
 					Elev_set_door_open_lamp(0)
-					//fmt.Println("Door closed")
-					fmt.Println("Contiuing")
+					
+		
 					stopElevator_i = false
 				}
 				if stopElevator_i == false {
 					if (CurrentFloor < nextFloor_i) && (nextFloor_i <= 3) {
 						Elev_set_motor_direction(DIRN_UP)
-						fmt.Println("UP")
+		
 					} else if (CurrentFloor > nextFloor_i) && (nextFloor_i >= 0) {
 						Elev_set_motor_direction(DIRN_DOWN)
-						fmt.Println("DOWN")
+
 					} else {
 						Elev_set_motor_direction(DIRN_STOP)
-						fmt.Println("STOP, next floor is: ", nextFloor_i)
+
 					}
 				}
 			}
 
 		default:
+			if State == 0 {
 
-		}
+				if (CurrentFloor == nextFloor_i) && (Finished == false) {
 
-		if State == 0 {
+					Elev_set_motor_direction(DIRN_STOP)
+					State = 1
+				}
+			} else if State == 1 {
+				Elev_set_door_open_lamp(1)
 
-			if (CurrentFloor == nextFloor_i) && (Finished == false) {
+				State = 2
 
-				Elev_set_motor_direction(DIRN_STOP)
-				State = 1
+			} else if State == 2 {
+				time.Sleep(time.Second * 2)
+				State = 3
+
+			} else if State == 3 {
+				orderFinished <- true
+				Elev_set_door_open_lamp(0)
+				State = 0
+				Finished = true
 			}
-		} else if State == 1 {
-			Elev_set_door_open_lamp(1)
-			fmt.Println("Door open")
-			State = 2
-
-		} else if State == 2 {
-			time.Sleep(time.Second * 2)
-			State = 3
-
-		} else if State == 3 {
-			orderFinished <- true
-			Elev_set_door_open_lamp(0)
-			fmt.Println("Door closed")
-			fmt.Println("Ready for new floor")
-			State = 0
-			Finished = true
+			time.Sleep(time.Millisecond * 10)
 		}
-		time.Sleep(time.Millisecond * 10)
-
 	}
 }

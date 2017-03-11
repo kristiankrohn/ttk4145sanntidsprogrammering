@@ -38,13 +38,13 @@ func Watchdog() uint64 {
 	command := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run main.go")
 	err = command.Run()
 	CheckError(err)
-	fmt.Println("My father is dead, i'm now in control")
+	fmt.Println("I'm now in control")
 
 	return counter
 
 }
 
-func IsAlive(counter uint64) {
+func Watchcat(counter uint64) {
 	isAliveAddr, err := net.ResolveUDPAddr("udp", "127.0.0.255:20221")
 	CheckError(err)
 	isAlive, err := net.DialUDP("udp", nil, isAliveAddr)
@@ -59,32 +59,33 @@ func IsAlive(counter uint64) {
 
 func main() {
 	nextFloor := make(chan int, 20)
-	go Displayfloor()
+	go Display_floor()
 
 	var counter uint64 = Watchdog()
-	go IsAlive(counter)
+	go Watchcat(counter)
 
 	Init_system(nextFloor)
 
 	orderFinished := make(chan bool, 5)
-	up_button := make(chan int, 4)
-	down_button := make(chan int, 4)
-	internal_button := make(chan int, 4)
+	upButton := make(chan int, 4)
+	downButton := make(chan int, 4)
+	internalButton := make(chan int, 4)
 	message := make(chan string, 20)
-	recievedmessage := make(chan string, 40)
+	recievedMessage := make(chan string, 40)
 	stopElevator := make(chan bool, 5)
+	
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	fmt.Println("Init finished")
 
-	go Broadcast(message, recievedmessage)
+	go Broadcast(message, recievedMessage)
 	go Elevator_driver(nextFloor, orderFinished, stopElevator)
-	go TCP_sender(message, recievedmessage)
-	go Local_orders(internal_button, nextFloor, orderFinished)
-	go Handle_buttons(up_button, down_button, internal_button)
-	go External_orders(message, up_button, down_button, nextFloor)
-	go TCP_listener(recievedmessage)
-	go Message_handler(recievedmessage, message)
+	go TCP_sender(message, recievedMessage)
+	go Local_orders(internalButton, nextFloor, orderFinished)
+	go Handle_buttons(upButton, downButton, internalButton)
+	go External_orders(message, upButton, downButton, nextFloor)
+	go TCP_listener(recievedMessage)
+	go Message_handler(recievedMessage, message)
 	go Assess_cost(nextFloor)
 	go Clear_orders(orderFinished, nextFloor, message, stopElevator)
 	go Resend_externalorders(message)

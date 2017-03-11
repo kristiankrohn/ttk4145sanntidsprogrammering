@@ -108,7 +108,7 @@ func Init_system(nextFloor chan int) {
 	}
 }
 
-func Calculate_cost(floor int, calldirection int) int {
+func Calculate_cost(floor int) int {
 	//very simple costfunction based on direction of travel, distance and number of orders
 	var cost int
 	var direction int = 10
@@ -139,7 +139,7 @@ func Calculate_cost(floor int, calldirection int) int {
 	return cost * (numberofOrders + 1)
 }
 
-func Local_orders(internal_button chan int, nextFloor chan int, orderFinished chan bool) {
+func Local_orders(internalButton chan int, nextFloor chan int, orderFinished chan bool) {
 	//read buttonpress from channel
 	//check if order is already in que
 	// add order to que if its not already in
@@ -147,11 +147,11 @@ func Local_orders(internal_button chan int, nextFloor chan int, orderFinished ch
 
 	for {
 		select {
-		case internal_call := <-internal_button:
+		case internalCall := <-internalButton:
 			{
 
 				orderMatch = false
-				newOrder := int(internal_call)
+				newOrder := int(internalCall)
 				for j := 0; j <= numberofOrders; j++ {
 					if (orderArray[j].Floor == newOrder) && (orderArray[j].Button == 2) {
 						orderMatch = true
@@ -181,7 +181,7 @@ func Local_orders(internal_button chan int, nextFloor chan int, orderFinished ch
 	}
 }
 
-func External_orders(message chan string, up_button chan int, down_button chan int, nextFloor chan int) {
+func External_orders(message chan string, upButton chan int, downButton chan int, nextFloor chan int) {
 	//read buttonpress from channel
 	//check if order is already in que
 	//share order on network
@@ -193,11 +193,11 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 	for {
 
 		select {
-		case call_up := <-up_button:
+		case callUp := <-upButton:
 			{
 				orderMatch = false
 				DIR = 0
-				newOrder = int(call_up)
+				newOrder = int(callUp)
 				for j := 0; j <= ext_numberofOrders; j++ {
 					if (ext_orderArray[j].Floor == newOrder) && (ext_orderArray[j].Button == DIR) {
 						orderMatch = true
@@ -211,17 +211,18 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 
 					message <- strings.Join([]string{strconv.FormatInt(int64(0), 10), strconv.FormatInt(int64(newOrder), 10),
 						strconv.FormatInt(int64(DIR), 10)}, ",")
+
 					ext_orderArray[ext_numberofOrders] = Extentry{newOrder, DIR, time.Now()}
 					ext_numberofOrders++
 					Elev_set_button_lamp(BUTTON_CALL_UP, newOrder, 1)
 				}
 			}
 
-		case call_down := <-down_button:
+		case callDown := <-downButton:
 			{
 				orderMatch = false
 				DIR = 1
-				newOrder = int(call_down)
+				newOrder = int(callDown)
 				for j := 0; j <= ext_numberofOrders; j++ {
 					if (ext_orderArray[j].Floor == newOrder) && (ext_orderArray[j].Button == DIR) {
 						orderMatch = true
@@ -246,12 +247,12 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 
 }
 
-func Message_handler(recievedmessage chan string, message chan string) {
+func Message_handler(recievedMessage chan string, message chan string) {
 	//Sort incomiing messages based on messagecode and send out proper response
 
 	for {
 		select {
-		case newOrder := <-recievedmessage:
+		case newOrder := <-recievedMessage:
 			{
 				//Messagecodes:
 				// 0 = new order
@@ -264,7 +265,7 @@ func Message_handler(recievedmessage chan string, message chan string) {
 				messagecode, err := strconv.ParseInt(slice[0], 10, 64)
 				CheckError(err)
 
-				if messagecode == 0 { // Recieving a new order and sening out the cost
+				if messagecode == 0 { // Recieving a new order and sending out the cost
 					Floor, err := strconv.ParseInt(slice[1], 10, 64)
 					CheckError(err)
 					newOrder := int(Floor)
@@ -279,9 +280,9 @@ func Message_handler(recievedmessage chan string, message chan string) {
 					}
 
 					if DIR == 0 {
-						Elev_set_button_lamp(BUTTON_CALL_UP, newOrder, 1) // Flyttes etterhvert?
+						Elev_set_button_lamp(BUTTON_CALL_UP, newOrder, 1) 
 					} else if DIR == 1 {
-						Elev_set_button_lamp(BUTTON_CALL_DOWN, newOrder, 1) // Flyttes etterhvert?
+						Elev_set_button_lamp(BUTTON_CALL_DOWN, newOrder, 1)
 					}
 
 					orderMatch := false
@@ -289,7 +290,6 @@ func Message_handler(recievedmessage chan string, message chan string) {
 					for j := 0; j <= ext_numberofOrders; j++ {
 						if (ext_orderArray[j].Floor == newOrder) && (ext_orderArray[j].Button == DIR) {
 							orderMatch = true
-							fmt.Println("Extorder already exist")
 						}
 					}
 					if orderMatch == false { // we have a new order that doesn't exist in the array
@@ -300,7 +300,8 @@ func Message_handler(recievedmessage chan string, message chan string) {
 						fmt.Println("New external order array", ext_orderArray[0].Floor)
 					}
 
-					cost := Calculate_cost(newOrder, DIR)
+					cost := Calculate_cost(newOrder)
+
 					button := newOrder + (DIR+1)*(DIR+1)
 					message <- strings.Join([]string{strconv.FormatInt(int64(1), 10), strconv.FormatInt(int64(cost), 10),
 						strconv.FormatInt(int64(button), 10)}, ",")
@@ -322,9 +323,9 @@ func Message_handler(recievedmessage chan string, message chan string) {
 					lastaddressbyte := int(lastaddressbyte_i64)
 
 					if numberofCosts[button].number <= Numberofelevators {
-						fmt.Println("Adding cost to array", cost, button, numberofCosts[button].number) //Cost_array = arraysize * numberofelevators
+						fmt.Println("Adding cost to array", cost, button, numberofCosts[button].number) 
 
-						// Adding cost to costarray and starting timer if it is first cost added
+						// Adding cost to costarray and starting timer if it's first cost added
 						cost_array[button][numberofCosts[button].number] = Costentry{cost, lastaddressbyte}
 						if numberofCosts[button].number == 0 {
 							numberofCosts[button].starttime = time.Now()
@@ -363,18 +364,17 @@ func Message_handler(recievedmessage chan string, message chan string) {
 									i = j
 								}
 								ext_numberofOrders--
-								fmt.Print("Removed completed externalorder, remaining: ", ext_numberofOrders)
-								fmt.Println(" First is to floor: ", ext_orderArray[0].Floor)
+								fmt.Println("Removed completed externalorder, remaining: ", ext_numberofOrders)
 							}
 						}
+
 					} else {
 						fmt.Println("Invalid clear message")
 						fmt.Println(newOrder)
-						//os.Exit(0)
 					}
 					if ext_numberofOrders < 0 {
 						ext_numberofOrders = 0
-					} // just to be sure
+					} 
 				}
 			}
 		default:
@@ -402,17 +402,14 @@ func Assess_cost(nextFloor chan int) {
 						min = cost_array[i][j]
 						//Dersom kosten er den samme som vår kost, men vår IP er lavere, så tar vi oppdraget
 					} else if min.cost == cost_array[i][j].cost {
-						fmt.Println("cost_array[i][j].IP = ", cost_array[i][j].IP)
-						fmt.Println("min.IP = ", min.IP)
 						if cost_array[i][j].IP <= min.IP {
 							min = cost_array[i][j]
-							fmt.Println("We have a same cost, but lower IP, best choice so far is IP: ", min.IP)
 						} 
 					}
 
 				}
-				fmt.Println("Best choice is: ", min.IP)
-				fmt.Println("I am IP: ", myIP)
+				fmt.Print("Best choice is: ", min.IP)
+				fmt.Println(" I am IP: ", myIP)
 				if (myIP == min.IP) || (numberofCosts[i].number == 1) {
 
 					fmt.Println("I have lowest cost or cost&IP and taking order, the number in que is", numberofOrders)
@@ -429,9 +426,7 @@ func Assess_cost(nextFloor chan int) {
 					Backup_localorders()
 
 					if numberofOrders == 1 {
-						fmt.Println("This is first order and sending to elevator")
 						nextFloor <- orderArray[0].Floor
-
 						fmt.Println("Next floor is: ", orderArray[0].Floor)
 					}
 				} else {
@@ -449,16 +444,15 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 	//motta kvittering
 	//fjern ordre fra kø
 
-	Button := BUTTON_COMMAND
+	button := BUTTON_COMMAND
 	for {
 		if numberofOrders > 0 { // go to floor and remove order from que when finished
 
 			select {
 			case orderFinished_i := <-orderFinished:
-				fmt.Println("Removing order")
 				if orderFinished_i == true {
 					if orderArray[0].Button == 0 { // Internal
-						Button = BUTTON_CALL_UP
+						button = BUTTON_CALL_UP
 						//clear external order array
 						for i := 0; i < ext_numberofOrders; i++ {
 							if ext_orderArray[i].Button == 0 {
@@ -469,7 +463,7 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 							}
 						}
 					} else if orderArray[0].Button == 1 {
-						Button = BUTTON_CALL_DOWN
+						button = BUTTON_CALL_DOWN
 						//clear external order array
 						for i := 0; i < ext_numberofOrders; i++ {
 							if ext_orderArray[i].Button == 1 {
@@ -480,17 +474,16 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 							}
 						}
 					} else {
-						Button = BUTTON_COMMAND
+						button = BUTTON_COMMAND
 					}
 					fmt.Println("Order to floor: ", orderArray[0].Floor, " finished, removed from que")
-					Elev_set_button_lamp(Button, orderArray[0].Floor, 0)
+					Elev_set_button_lamp(button, orderArray[0].Floor, 0)
 					
 					for i := 0; i < numberofOrders; i++ {
 						orderArray[i] = orderArray[i+1]
 					}
 					numberofOrders--
-					fmt.Println("Number of orders: ", numberofOrders)
-					//fmt.Println(orderArray)
+					fmt.Println("Number of orders left: ", numberofOrders)
 
 					Backup_localorders()
 
@@ -521,8 +514,6 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 								if (orderArray[i].Button == direction) || (orderArray[i].Button == 2) {
 									stopElevator <- true
 
-									fmt.Println("Current floor:", CurrentFloor)
-
 									for j := 0; j < ext_numberofOrders; j++ {
 										if (ext_orderArray[j].Floor == orderArray[i].Floor) && (ext_orderArray[j].Button == orderArray[i].Button) {
 											message <- strings.Join([]string{strconv.FormatInt(int64(2), 10), strconv.FormatInt(int64(ext_orderArray[j].Floor), 10),
@@ -541,7 +532,7 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 									} else {
 										Button = BUTTON_COMMAND
 									}
-									fmt.Println("Button to close: ", orderArray[i].Button)
+				
 									Elev_set_button_lamp(Button, CurrentFloor, 0)
 									//Remove order from array
 									for j := i; j < numberofOrders; j++ {

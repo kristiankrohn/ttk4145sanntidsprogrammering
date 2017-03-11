@@ -211,6 +211,9 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 
 					message <- strings.Join([]string{strconv.FormatInt(int64(0), 10), strconv.FormatInt(int64(newOrder), 10),
 						strconv.FormatInt(int64(DIR), 10)}, ",")
+					ext_orderArray[ext_numberofOrders] = Extentry{newOrder, DIR, time.Now()}
+					ext_numberofOrders++
+					Elev_set_button_lamp(BUTTON_CALL_UP, newOrder, 1)
 				}
 			}
 
@@ -232,6 +235,9 @@ func External_orders(message chan string, up_button chan int, down_button chan i
 
 					message <- strings.Join([]string{strconv.FormatInt(int64(0), 10), strconv.FormatInt(int64(newOrder), 10),
 						strconv.FormatInt(int64(DIR), 10)}, ",")
+					ext_orderArray[ext_numberofOrders] = Extentry{newOrder, DIR, time.Now()}
+					ext_numberofOrders++
+					Elev_set_button_lamp(BUTTON_CALL_DOWN, newOrder, 1)
 				}
 			}
 		}
@@ -346,21 +352,26 @@ func Message_handler(recievedmessage chan string, message chan string) {
 					} else {
 						Button = BUTTON_CALL_DOWN
 					}
+					if (Floor >= 0)||(Floor > 3){
+						fmt.Println("Clear external button at floor: ", Floor)
+						Elev_set_button_lamp(Button, Floor, 0)
 
-					Elev_set_button_lamp(Button, Floor, 0)
-
-					for i := 0; i < ext_numberofOrders; i++ {
-						if (ext_orderArray[i].Floor == Floor) && (ext_orderArray[i].Button == DIR) {
-							for j := i; j < ext_numberofOrders; j++ {
-								ext_orderArray[j] = ext_orderArray[j+1]
-								i = j
+						for i := 0; i < ext_numberofOrders; i++ {
+							if (ext_orderArray[i].Floor == Floor) && (ext_orderArray[i].Button == DIR) {
+								for j := i; j < ext_numberofOrders; j++ {
+									ext_orderArray[j] = ext_orderArray[j+1]
+									i = j
+								}
+								ext_numberofOrders--
+								fmt.Print("Removed completed externalorder, remaining: ", ext_numberofOrders)
+								fmt.Println(" First is to floor: ", ext_orderArray[0].Floor)
 							}
-							ext_numberofOrders--
-							fmt.Print("Removed completed externalorder, remaining: ", ext_numberofOrders)
-							fmt.Println(" First is to floor: ", ext_orderArray[0].Floor)
 						}
+					} else {
+						fmt.Println("Invalid clear message")
+						fmt.Println(newOrder)
+						os.Exit(0)
 					}
-
 					if ext_numberofOrders < 0 {
 						ext_numberofOrders = 0
 					} // just to be sure
@@ -382,21 +393,22 @@ func Assess_cost(nextFloor chan int) {
 			now := time.Now()
 			//fmt.Println("checking for ordertimeouts: ", i)
 			if (now.Sub(numberofCosts[i].starttime) > 1000000000) && (numberofCosts[i].number > 0) { // check for timeout, if timeout, assess costarray
-				min := Costentry{9000, myIP}
+				min := cost_array[i][0]
 				fmt.Println("Order auction ended, assessing cost")
-				for j := 0; j < numberofCosts[i].number; j++ {
+				for j := 0; j <= numberofCosts[i].number; j++ {
 
 					//Sjekker hvilket bidrag som har lavest kost
 					if cost_array[i][j].cost < min.cost {
 						min = cost_array[i][j]
 						//Dersom kosten er den samme som vår kost, men vår IP er lavere, så tar vi oppdraget
 					} else if min.cost == cost_array[i][j].cost {
-						//fmt.Println("min.IP = ", min.IP)
+						fmt.Println("myIP = ", myIP)
+						fmt.Println("min.IP = ", min.IP)
 						if myIP <= min.IP {
 							min = cost_array[i][j]
-							//fmt.Println("Same cost, i have lowest IP of: ", myIP)
+							fmt.Println("Same cost, i have lowest IP of: ", myIP)
 						} else {
-							//fmt.Println("Same cost but i have higer IP of: ", myIP)
+							fmt.Println("Same cost but i have higer IP of: ", myIP)
 						}
 					}
 
@@ -424,7 +436,7 @@ func Assess_cost(nextFloor chan int) {
 						fmt.Println("Next floor is: ", orderArray[0].Floor)
 					}
 				} else {
-					fmt.Println("I did not have lowest cost and did not take the order")
+					fmt.Println("I did not have lowest cost or cost&IP and did not take the order")
 				}
 				numberofCosts[i].number = 0
 			}
@@ -471,8 +483,9 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 					} else {
 						Button = BUTTON_COMMAND
 					}
-					Elev_set_button_lamp(Button, orderArray[0].Floor, 0)
 					fmt.Println("Order to floor: ", orderArray[0].Floor, " finished, removed from que")
+					Elev_set_button_lamp(Button, orderArray[0].Floor, 0)
+					
 					for i := 0; i < numberofOrders; i++ {
 						orderArray[i] = orderArray[i+1]
 					}

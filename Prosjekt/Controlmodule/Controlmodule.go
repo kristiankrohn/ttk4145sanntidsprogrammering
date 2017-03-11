@@ -404,12 +404,9 @@ func Assess_cost(nextFloor chan int) {
 					} else if min.cost == cost_array[i][j].cost {
 						fmt.Println("myIP = ", myIP)
 						fmt.Println("min.IP = ", min.IP)
-						if cost_array[i][j] <= min.IP {
+						if cost_array[i][j].IP <= min.IP {
 							min = cost_array[i][j]
-							fmt.Println("Same cost, i have lowest IP of: ", myIP)
-						} else {
-							fmt.Println("Same cost but i have higer IP of: ", myIP)
-						}
+						} 
 					}
 
 				}

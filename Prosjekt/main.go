@@ -1,6 +1,6 @@
 package main
 
-import (
+import ( //things we need
 	. "./Controlmodule"
 	. "./Controlmodule/Elevatormodule"
 	. "./Controlmodule/Networkmodule"
@@ -12,16 +12,18 @@ import (
 	"time"
 )
 
-func Watchdog() uint64 {
+func Watchdog() uint64 { //Watches Im_alive and send smokesignals to Watchcat
 	var counter uint64 = 0
 	buffer := make([]byte, 8)
+
+	//set up connections to read and write to ourselves using loopback address
 	ListenAddr, err := net.ResolveUDPAddr("udp", "127.0.0.255:20221")
 	CheckError(err)
 	Listener, err := net.ListenUDP("udp", ListenAddr)
 	CheckError(err)
 
 	fmt.Println("Connection established")
-	fmt.Println("A new elevatorcontoller has been born")
+	fmt.Println("A new watchdog has been born")
 
 	isAliveAddr, err := net.ResolveUDPAddr("udp", "127.0.0.255:22221")
 	CheckError(err)
@@ -51,13 +53,13 @@ func Watchdog() uint64 {
 	command := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run main.go")
 	err = command.Run()
 	CheckError(err)
-	fmt.Println("I'm now in control")
+	fmt.Println("No liftcontrol responding, taking over and spawning new watchdog")
 
 	return counter
 
 }
 
-func Watchcat(counter uint64) {
+func Im_alive(counter uint64) { // send lifesign to watchdog
 	isAliveAddr, err := net.ResolveUDPAddr("udp", "127.0.0.255:20221")
 	CheckError(err)
 	isAlive, err := net.DialUDP("udp", nil, isAliveAddr)
@@ -72,7 +74,7 @@ func Watchcat(counter uint64) {
 	}
 }
 
-func IsDogAlive(){
+func Watchcat(){ // watches watchdog
 	ListenAddr, err := net.ResolveUDPAddr("udp", "127.0.0.255:22221")
 	CheckError(err)
 	Listener, err := net.ListenUDP("udp", ListenAddr)
@@ -85,20 +87,20 @@ func IsDogAlive(){
 			command := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run main.go")
 			err = command.Run()
 			CheckError(err)
-			fmt.Println("Watchdog has died")
+			fmt.Println("Watchdog has died, spawning a new")
 
 		}
 		time.Sleep(time.Millisecond * 10)
 	}
 }
 
-func main() {
+func main() { // set up system and wait to die
 	nextFloor := make(chan int, 20)
 	go Display_floor()
 
 	var counter uint64 = Watchdog()
-	go Watchcat(counter)
-	go IsDogAlive()
+	go Im_alive(counter)
+	go Watchcat()
 	Init_system(nextFloor)
 
 	orderFinished := make(chan bool, 5)

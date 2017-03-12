@@ -107,7 +107,7 @@ func Handle_buttons(upButton chan int, downButton chan int, internalButton chan 
 				buttonPress[dir][floor] = Elev_get_button_signal(button, floor) //UP == 0, DOWN == 1
 				if (buttonPress[dir][floor] == 1) && (buttonRelease[dir][floor] == 0) {
 					buttonRelease[dir][floor] = 1
-				
+
 					if dir == 0 {
 
 						upButton <- floor
@@ -171,17 +171,17 @@ func Elevator_driver(nextFloor chan int, orderFinished chan bool, stopElevator c
 				for stopElevator_i == true {
 					Elev_set_motor_direction(DIRN_STOP)
 					Elev_set_door_open_lamp(1)
-		
+
 					time.Sleep(time.Second * 2)
 					Elev_set_door_open_lamp(0)
-					
-		
+
+
 					stopElevator_i = false
 				}
 				if stopElevator_i == false {
 					if (CurrentFloor < nextFloor_i) && (nextFloor_i <= 3) {
 						Elev_set_motor_direction(DIRN_UP)
-		
+
 					} else if (CurrentFloor > nextFloor_i) && (nextFloor_i >= 0) {
 						Elev_set_motor_direction(DIRN_DOWN)
 
@@ -192,7 +192,7 @@ func Elevator_driver(nextFloor chan int, orderFinished chan bool, stopElevator c
 				}
 			}
 
-		default:
+		default: // intentionally placed default, we're polling this one
 			if State == 0 {
 
 				if (CurrentFloor == nextFloor_i) && (Finished == false) {

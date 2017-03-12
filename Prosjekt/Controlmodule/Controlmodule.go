@@ -280,7 +280,7 @@ func Message_handler(recievedMessage chan string, message chan string) {
 					}
 
 					if DIR == 0 {
-						Elev_set_button_lamp(BUTTON_CALL_UP, newOrder, 1) 
+						Elev_set_button_lamp(BUTTON_CALL_UP, newOrder, 1)
 					} else if DIR == 1 {
 						Elev_set_button_lamp(BUTTON_CALL_DOWN, newOrder, 1)
 					}
@@ -323,7 +323,7 @@ func Message_handler(recievedMessage chan string, message chan string) {
 					lastaddressbyte := int(lastaddressbyte_i64)
 
 					if numberofCosts[button].number <= Numberofelevators {
-						fmt.Println("Adding cost to array", cost, button, numberofCosts[button].number) 
+						fmt.Println("Adding cost to array", cost, button, numberofCosts[button].number)
 
 						// Adding cost to costarray and starting timer if it's first cost added
 						cost_array[button][numberofCosts[button].number] = Costentry{cost, lastaddressbyte}
@@ -374,10 +374,10 @@ func Message_handler(recievedMessage chan string, message chan string) {
 					}
 					if ext_numberofOrders < 0 {
 						ext_numberofOrders = 0
-					} 
+					}
 				}
 			}
-		default:
+		default: 
 			time.Sleep(time.Millisecond * 10)
 
 		}
@@ -404,7 +404,7 @@ func Assess_cost(nextFloor chan int) {
 					} else if min.cost == cost_array[i][j].cost {
 						if cost_array[i][j].IP <= min.IP {
 							min = cost_array[i][j]
-						} 
+						}
 					}
 
 				}
@@ -478,7 +478,7 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 					}
 					fmt.Println("Order to floor: ", orderArray[0].Floor, " finished, removed from que")
 					Elev_set_button_lamp(button, orderArray[0].Floor, 0)
-					
+
 					for i := 0; i < numberofOrders; i++ {
 						orderArray[i] = orderArray[i+1]
 					}
@@ -525,14 +525,14 @@ func Clear_orders(orderFinished chan bool, nextFloor chan int, message chan stri
 									Button := BUTTON_COMMAND
 									if orderArray[i].Button == 0 {
 										Button = BUTTON_CALL_UP
-										
+
 									} else if orderArray[i].Button == 1 {
 										Button = BUTTON_CALL_DOWN
-	
+
 									} else {
 										Button = BUTTON_COMMAND
 									}
-				
+
 									Elev_set_button_lamp(Button, CurrentFloor, 0)
 									//Remove order from array
 									for j := i; j < numberofOrders; j++ {
